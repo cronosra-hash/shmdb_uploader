@@ -1,47 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Search Results</title>
     <link rel="stylesheet" href="/static/styles.css">
 </head>
-
 <body>
-    <div class="grid-container">
-        <h1>Search Results</h1>
-        {% if results %}
-        {% for result in results %}
-        <div class="result-item">
-            <h3>{{ result.title or result.name }}</h3>
-            <p>Type: {{ result.media_type | capitalize }}</p>
-            <p>Release Date: {{ result.release_date or result.first_air_date }}</p>
-            {% if result.poster_path %}
-            <img src="https://image.tmdb.org/t/p/w200{{ result.poster_path }}" alt="Poster">
-            {% endif %}
-            <form method="get" action="/upload">
-                <input type="hidden" name="tmdb_id" value="{{ result.id }}">
-                <input type="hidden" name="media_type" value="{{ result.media_type }}">
-                <button type="submit" class="action-btn"
-                    title="{{ 'Update existing entry' if result.exists else 'Upload new entry' }}">
-                    {% if result.exists %}
-                    🛠️ Update
-                    {% else %}
-                    ⬆️ Upload
-                    {% endif %}
-                </button>
-            </form>
-        </div>
-        {% endfor %}
-        {% else %}
-        <p>No results found.</p>
-        {% endif %}
+    <h1>Search Results</h1>
 
-        <a href="/">Go back</a>
+    <div class="toggle-container">
+        <label>
+            <input type="checkbox" id="darkModeToggle"> Dark Mode
+        </label>
     </div>
 
+    <div class="grid-container">
+        {% for result in results %}
+        <div class="card">
+            {% if result.poster_path %}
+                <img class="poster" src="https://image.tmdb.org/t/p/w185{{ result.poster_path }}" alt="Poster">
+            {% else %}
+                <div class="poster" style="height: 278px; background-color: #ccc; display: flex; align-items: center; justify-content: center;">
+                    <span>No Image</span>
+                </div>
+            {% endif %}
+
+            <div class="title">
+                <span class="media-icon">
+                    {% if result.media_type == "movie" %}🎬{% elif result.media_type == "tv" %}📺{% endif %}
+                </span>
+                {{ result.name or result.title }}
+            </div>
+
+            <div class="badge {% if result.exists %}badge-success{% else %}badge-secondary{% endif %}">
+                {% if result.exists %}In DB{% else %}New{% endif %}
+            </div>
+
+            {% if result.lastupdated %}
+                <div class="timestamp">Last updated: {{ result.lastupdated.strftime('%Y-%m-%d %H:%M') }}</div>
+            {% endif %}
+
+            <div class="action">
+                <form method="post" action="/search">
+                    <input type="hidden" name="tmdb_id" value="{{ result.id }}">
+                    <input type="hidden" name="media_type" value="{{ result.media_type }}">
+                    <button type="submit">
+                        {% if result.exists %}Update{% else %}Insert{% endif %}
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        const toggle = document.getElementById('darkModeToggle');
+        toggle.addEventListener('change', () => {
+            document.body.classList.toggle('dark-mode', toggle.checked);
+        });
+    </script>
 </body>
-
 </html>
-
-</div>

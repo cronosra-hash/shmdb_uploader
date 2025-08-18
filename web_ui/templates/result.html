@@ -3,13 +3,59 @@
 <head>
     <title>Upload Result</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 2em; }
-        h2 { color: #2c3e50; }
-        ul { list-style-type: none; padding: 0; }
-        li { margin-bottom: 0.5em; background: #f4f4f4; padding: 0.5em; border-radius: 5px; }
-        .timestamp { font-weight: bold; color: #34495e; }
-        .change-type { color: #2980b9; }
-        .field { font-style: italic; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2em;
+            background-color: #fff;
+            color: #333;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 1em;
+        }
+
+        h3 {
+            margin-top: 2em;
+            color: #2c3e50;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 0.75em;
+            background: #f4f4f4;
+            padding: 0.75em;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .timestamp {
+            font-weight: bold;
+            color: #34495e;
+            margin-right: 0.5em;
+        }
+
+        .change-type {
+            color: #2980b9;
+            font-weight: bold;
+        }
+
+        .field {
+            font-style: italic;
+            margin-left: 0.25em;
+        }
+
+        .no-updates {
+            background-color: #eee;
+            padding: 1em;
+            border-radius: 5px;
+            font-style: italic;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -21,14 +67,14 @@
         {% for change in changes %}
             <li>
                 <span class="timestamp">[{{ change.timestamp }}]</span>
-                <span class="change-type">{{ change.change_type }}</span>:
-                <span class="field">{{ change.field }}</span>
-                changed from '<strong>{{ change.old_value }}</strong>' to '<strong>{{ change.new_value }}</strong>'
+                <span class="change-type">{{ change.change_type }}</span>
+                <span class="field">{{ change.field }}</span>:
+                <span>changed from <strong>{{ change.old_value }}</strong> to <strong>{{ change.new_value }}</strong></span>
             </li>
         {% endfor %}
         </ul>
     {% else %}
-        <p>No updates found in the log.</p>
+        <div class="no-updates">No updates found in the log.</div>
     {% endif %}
 </body>
 </html>
