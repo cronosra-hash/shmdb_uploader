@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run main_movie.py",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/main_movie.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Run main_tv.py",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/main_tv.py",
+            "console": "integratedTerminal"
+        }
+    ]
+}

@@ -1,0 +1,16 @@
+<<<<<<< HEAD
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+requests
+python-dotenv
+=======
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+requests
+python-dotenv
+>>>>>>> d9b5cc2 (first commit)
+psycopg2

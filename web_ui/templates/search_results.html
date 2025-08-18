@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Search Results</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+    <div class="grid-container">
+        <h1>Search Results</h1>
+        {% if results %}
+        {% for result in results %}
+        <div class="result-item">
+            <h3>{{ result.title or result.name }}</h3>
+            <p>Type: {{ result.media_type | capitalize }}</p>
+            <p>Release Date: {{ result.release_date or result.first_air_date }}</p>
+            {% if result.poster_path %}
+            <img src="https://image.tmdb.org/t/p/w200{{ result.poster_path }}" alt="Poster">
+            {% endif %}
+            <form method="get" action="/upload">
+                <input type="hidden" name="tmdb_id" value="{{ result.id }}">
+                <input type="hidden" name="media_type" value="{{ result.media_type }}">
+                <button type="submit" class="action-btn"
+                    title="{{ 'Update existing entry' if result.exists else 'Upload new entry' }}">
+                    {% if result.exists %}
+                    🛠️ Update
+                    {% else %}
+                    ⬆️ Upload
+                    {% endif %}
+                </button>
+            </form>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p>No results found.</p>
+        {% endif %}
+
+        <a href="/">Go back</a>
+    </div>
+
+</body>
+
+</html>
+
+</div>
