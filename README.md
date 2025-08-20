@@ -1,3 +1,7 @@
+# To Run
+
+python -m uvicorn web_ui.app:app --reload
+
 # SHMDB Uploader
 
 This project synchronizes movie and TV series data from The Movie Database (TMDB) into a PostgreSQL database. It uses the TMDB API to fetch metadata and stores it in structured tables for movies, series, seasons, episodes, cast, crew, genres, languages, countries, and production companies.
