@@ -5,8 +5,5 @@
 {% block subheader %}<h2>Upload Movie or TV Series</h2>{% endblock %}
 
 {% block content %}
-  <form method="post" action="/search" class="neon-search-form">
-    <input type="text" name="name" placeholder="Search for movies or TV shows" class="neon-input">
-    <button type="submit" class="neon-button">Search</button>
-  </form>
+  {% include "partials/_search_form.html" %}
 {% endblock %}
