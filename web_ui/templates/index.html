@@ -1,45 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-  <meta charset="UTF-8">
-  <title>TMDB Uploader</title>
-  <link rel="stylesheet" href="/static/styles.css">
-</head>
+{% block title %}TMDB Uploader{% endblock %}
+{% block header %}SHMDB Uploader{% endblock %}
+{% block subheader %}<h2>Upload Movie or TV Series</h2>{% endblock %}
 
-<body>
-  <h1>TMDB Uploader</h1>
-  <h2>Upload Movie or TV Series</h2>
-
-  <form method="post" action="/search">
-    <input type="text" name="name" placeholder="Search for movies or TV shows">
-    <button type="submit">Search</button>
+{% block content %}
+  <form method="post" action="/search" class="neon-search-form">
+    <input type="text" name="name" placeholder="Search for movies or TV shows" class="neon-input">
+    <button type="submit" class="neon-button">Search</button>
   </form>
-
-
-  <div class="toggle-container">
-    <label>
-      <input type="checkbox" id="darkModeToggle"> Dark Mode
-    </label>
-  </div>
-  <script>
-    const toggle = document.getElementById('darkModeToggle');
-    const body = document.body;
-    if (localStorage.getItem('theme') === 'dark') {
-      body.classList.add('dark-mode');
-      toggle.checked = true;
-    }
-    toggle.addEventListener('change', () => {
-      if (toggle.checked) {
-        body.classList.add('dark-mode');
-        localStorage.setItem('theme', 'dark');
-      } else {
-        body.classList.remove('dark-mode');
-        localStorage.setItem('theme', 'light');
-      }
-    });
-  </script>
-
-</body>
-
-</html>
+{% endblock %}
