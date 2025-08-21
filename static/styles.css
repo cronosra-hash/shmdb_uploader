@@ -92,9 +92,9 @@ button:hover, a:hover {
 /* 🧱 Grid Layout */
 .grid-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1.5em;
-  padding: 3em 1em; /* Adds top and bottom space */
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 2em;
+  padding: 3em 2em;
 }
 
 /* 🃏 Card Styling */
@@ -109,6 +109,8 @@ button:hover, a:hover {
   transition: transform 0.3s ease;
   height: 100%;
   margin: 0; /* Prevent extra spacing from stacking */
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .card:hover {
@@ -116,9 +118,11 @@ button:hover, a:hover {
   box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
 }
 
-/* 📍 Card Action Button */
 .card .action {
-  margin-top: auto;
+  border-top: 1px solid rgba(0, 255, 255, 0.2);
+  padding-top: 1em;
+  display: flex;
+  justify-content: center;
 }
 
 .card .action form {
@@ -128,21 +132,6 @@ button:hover, a:hover {
   padding: 0;
   margin: 0;
   display: inline;
-}
-
-.card .action button {
-  background-color: var(--neon-cyan);
-  color: var(--bg-color);
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.card .action button:hover {
-  background-color: #00ccff;
 }
 
 /* 🖼️ Poster Image */
@@ -310,4 +299,51 @@ button:hover, a:hover {
   color: #888;
   text-align: center;
   box-shadow: 0 0 10px rgba(255, 0, 255, 0.2);
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fadeInUp {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.tooltip-container {
+  position: relative;
+  cursor: help;
+}
+
+.tooltip-text {
+  position: absolute;
+  bottom: 125%; /* Position above the badge */
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+.tooltip-container:hover .tooltip-text {
+  opacity: 1;
+}
+
+/* Optional arrow */
+.tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: #333 transparent transparent transparent;
 }
