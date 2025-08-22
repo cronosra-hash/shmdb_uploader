@@ -144,7 +144,7 @@ async def upload(request: Request, tmdb_id: int, media_type: str):
             movie_id = movie_data["id"]
         elif media_type == "tv":
             series_data = fetch_series(tmdb_id)
-            insert_or_update_series_data(conn, series_data)
+            insert_or_update_series_data(conn, series_data, TMDB_API_KEY)
             base_message = f"✅ TV Series '{series_data.get('name')}' processed successfully."
             movie_id = series_data["id"]
         else:

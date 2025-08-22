@@ -1,8 +1,23 @@
 from datetime import datetime
 from db.logger import log_update
 from tmdb.tv_api import fetch_series, fetch_season
+import requests
 
-DRY_RUN = False  # Set to True to disable DB writes
+def fetch_imdb_id(tv_id, api_key):
+    url = f"https://api.themoviedb.org/3/tv/{tv_id}"
+    params = {
+        "api_key": api_key,
+        "append_to_response": "external_ids"
+    }
+    try:
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        return data.get("external_ids", {}).get("imdb_id")
+    except Exception as e:
+        print(f"Failed to fetch IMDb ID for TV ID {tv_id}: {e}")
+        return None
+
 
 def ensure_person_exists(cur, person):
     cur.execute("SELECT 1 FROM people WHERE person_id = %s;", (person["id"],))
@@ -19,7 +34,7 @@ def ensure_person_exists(cur, person):
             person.get("popularity", 0)
         ))
 
-def insert_or_update_series_data(conn, series):
+def insert_or_update_series_data(conn, series, tmdb_api_key):
     with conn.cursor() as cur:
         cur.execute("SELECT * FROM series WHERE series_id = %s;", (series["id"],))
         existing = cur.fetchone()
@@ -30,52 +45,49 @@ def insert_or_update_series_data(conn, series):
             insert_series_data(conn, series)
 
         series_id = series["id"]
+        series["imdb_id"] = fetch_imdb_id(series["id"], tmdb_api_key)
         series_title = series["name"]
 
         # 🎭 Insert cast
         for cast in series.get("credits", {}).get("cast", [])[:30]:
-            if not DRY_RUN:
                 ensure_person_exists(cur, cast)
 
-            cur.execute("SELECT 1 FROM series_cast WHERE series_id = %s AND person_id = %s;", (series_id, cast["id"]))
-            if not cur.fetchone():
-                print(f"🎭 Added cast member '{cast['name']}' as '{cast.get('character')}' to series '{series_title}'")
-                log_update(cur, series_id, series_title, "cast_added", "cast", None, cast["name"])
-                if not DRY_RUN:
-                    cur.execute("""
-                        INSERT INTO series_cast (
-                            series_id, person_id, cast_order, character_name, lastupdated
-                        )
-                        VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
-                        ON CONFLICT DO NOTHING;
-                    """, (
-                        series_id,
-                        cast["id"],
-                        cast.get("order", 0),
-                        cast.get("character")
-                    ))
+        cur.execute("SELECT 1 FROM series_cast WHERE series_id = %s AND person_id = %s;", (series_id, cast["id"]))
+        if not cur.fetchone():
+            print(f"🎭 Added cast member '{cast['name']}' as '{cast.get('character')}' to series '{series_title}'")
+            log_update(cur, series_id, series_title, "cast_added", "cast", None, cast["name"])
+            cur.execute("""
+                INSERT INTO series_cast (
+                    series_id, person_id, cast_order, character_name, lastupdated
+                )
+                VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
+                ON CONFLICT DO NOTHING;
+            """, (
+                series_id,
+                cast["id"],
+                cast.get("order", 0),
+                cast.get("character")
+            ))
 
         # 🎬 Insert crew
         for crew in series.get("credits", {}).get("crew", []):
-            if not DRY_RUN:
                 ensure_person_exists(cur, crew)
 
-            cur.execute("SELECT 1 FROM series_crew WHERE series_id = %s AND person_id = %s;", (series_id, crew["id"]))
-            if not cur.fetchone():
-                print(f"🎬 Added crew member '{crew['name']}' ({crew.get('job')}) to series '{series_title}'")
-                log_update(cur, series_id, series_title, "crew_added", "crew", None, crew["name"])
-                if not DRY_RUN:
-                    cur.execute("""
-                        INSERT INTO series_crew (
-                            series_id, person_id, job, lastupdated
-                        )
-                        VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
-                        ON CONFLICT DO NOTHING;
-                    """, (
-                        series_id,
-                        crew["id"],
-                        crew.get("job")
-                    ))
+        cur.execute("SELECT 1 FROM series_crew WHERE series_id = %s AND person_id = %s;", (series_id, crew["id"]))
+        if not cur.fetchone():
+            print(f"🎬 Added crew member '{crew['name']}' ({crew.get('job')}) to series '{series_title}'")
+            log_update(cur, series_id, series_title, "crew_added", "crew", None, crew["name"])
+            cur.execute("""
+                INSERT INTO series_crew (
+                    series_id, person_id, job, lastupdated
+                )
+                VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
+                ON CONFLICT DO NOTHING;
+            """, (
+                series_id,
+                crew["id"],
+                crew.get("job")
+            ))
 
         # 📺 Insert seasons and episodes
         for s in series.get("seasons", []):
@@ -84,53 +96,50 @@ def insert_or_update_series_data(conn, series):
             if not cur.fetchone():
                 print(f"📺 Added season '{season_data.get('name')}' to series '{series_title}'")
                 log_update(cur, series_id, series_title, "season_added", "season", None, season_data.get("name"))
-                if not DRY_RUN:
-                    cur.execute("""
-                        INSERT INTO season (
-                            season_id, series_id, season_number, air_date,
-                            lastupdated, poster_path, name, overview
-                        )
-                        VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP, %s, %s, %s)
-                        ON CONFLICT DO NOTHING;
-                    """, (
-                        season_data["id"],
-                        series_id,
-                        season_data["season_number"],
-                        season_data.get("air_date"),
-                        season_data.get("poster_path"),
-                        season_data.get("name"),
-                        season_data.get("overview")
-                    ))
+                cur.execute("""
+                    INSERT INTO season (
+                        season_id, series_id, season_number, air_date,
+                        lastupdated, poster_path, name, overview
+                    )
+                    VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP, %s, %s, %s)
+                    ON CONFLICT DO NOTHING;
+                """, (
+                    season_data["id"],
+                    series_id,
+                    season_data["season_number"],
+                    season_data.get("air_date"),
+                    season_data.get("poster_path"),
+                    season_data.get("name"),
+                    season_data.get("overview")
+                ))
 
             for ep in season_data.get("episodes", []):
                 cur.execute("SELECT 1 FROM episode WHERE episode_id = %s;", (ep["id"],))
                 if not cur.fetchone():
                     print(f"🎞️ Added episode '{ep.get('name')}' to season {season_data['season_number']} of series '{series_title}'")
                     log_update(cur, series_id, series_title, "episode_added", "episode", None, ep.get("name"))
-                    if not DRY_RUN:
-                        cur.execute("""
-                            INSERT INTO episode (
-                                episode_id, season_id, series_id, episode_number,
-                                vote_average, vote_count, air_date, runtime,
-                                name, overview, still_path, lastupdated
-                            )
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-                            ON CONFLICT DO NOTHING;
-                        """, (
-                            ep["id"],
-                            season_data["id"],
-                            series_id,
-                            ep.get("episode_number"),
-                            ep.get("vote_average"),
-                            ep.get("vote_count"),
-                            ep.get("air_date"),
-                            ep.get("runtime"),
-                            ep.get("name"),
-                            ep.get("overview"),
-                            ep.get("still_path")
-                        ))
+                    cur.execute("""
+                        INSERT INTO episode (
+                            episode_id, season_id, series_id, episode_number,
+                            vote_average, vote_count, air_date, runtime,
+                            name, overview, still_path, lastupdated
+                        )
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                        ON CONFLICT DO NOTHING;
+                    """, (
+                        ep["id"],
+                        season_data["id"],
+                        series_id,
+                        ep.get("episode_number"),
+                        ep.get("vote_average"),
+                        ep.get("vote_count"),
+                        ep.get("air_date"),
+                        ep.get("runtime"),
+                        ep.get("name"),
+                        ep.get("overview"),
+                        ep.get("still_path")
+                    ))
 
-        if not DRY_RUN:
             conn.commit()
 
 def update_series_data(conn, series, existing):
@@ -138,8 +147,9 @@ def update_series_data(conn, series, existing):
         fields = [
             "name", "overview", "first_air_date", "last_air_date", "number_of_seasons",
             "number_of_episodes", "popularity", "vote_average", "vote_count", "poster_path",
-            "backdrop_path", "original_language", "status", "homepage"
+            "backdrop_path", "original_language", "status", "homepage", "imdb_id"
         ]
+
         updates, values, changed_fields = [], [], []
 
         new_data = [
@@ -147,7 +157,7 @@ def update_series_data(conn, series, existing):
             series.get("number_of_seasons"), series.get("number_of_episodes"), series.get("popularity"),
             series.get("vote_average"), series.get("vote_count"), series.get("poster_path"),
             series.get("backdrop_path"), series.get("original_language"), series.get("status"),
-            series.get("homepage")
+            series.get("homepage"), series.get("imdb_id")
         ]
 
         for i, (field, new_value) in enumerate(zip(fields, new_data)):
@@ -167,11 +177,8 @@ def update_series_data(conn, series, existing):
             updates.append("lastupdated = CURRENT_TIMESTAMP")
             values.append(series["id"])
             query = f"UPDATE series SET {', '.join(updates)} WHERE series_id = %s;"
-            if DRY_RUN:
-                print(f"[DRY-RUN] Would execute: {query} with {values}")
-            else:
-                cur.execute(query, values)
-                conn.commit()
+            cur.execute(query, values)
+            conn.commit()
             print(f"🔄 Updated series: {series['name']}")
             for field, old, new in changed_fields:
                 print(f" - {field}: '{old}' ➡️ '{new}'")
@@ -183,8 +190,8 @@ def insert_series_data(conn, series):
         query = """
         INSERT INTO series (series_id, name, overview, first_air_date, last_air_date,
         number_of_seasons, number_of_episodes, popularity, vote_average, vote_count,
-        poster_path, backdrop_path, original_language, status, homepage, lastupdated)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+        poster_path, backdrop_path, original_language, status, homepage, imdb_id, lastupdated)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
         ON CONFLICT DO NOTHING;
         """
         values = (
@@ -192,12 +199,8 @@ def insert_series_data(conn, series):
             series.get("last_air_date"), series.get("number_of_seasons"), series.get("number_of_episodes"),
             series.get("popularity"), series.get("vote_average"), series.get("vote_count"),
             series.get("poster_path"), series.get("backdrop_path"), series.get("original_language"),
-            series.get("status"), series.get("homepage")
+            series.get("status"), series.get("homepage"), series.get("imdb_id")
         )
-        if DRY_RUN:
-            print(f"[DRY-RUN] Would execute: {query} with {values}")
-        else:
-            cur.execute(query, values)
-        if not DRY_RUN:
-            conn.commit()
+        cur.execute(query, values)
+        conn.commit()
         print(f"✅ Inserted series: {series['name']}")
