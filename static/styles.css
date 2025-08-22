@@ -347,3 +347,25 @@ button:hover, a:hover {
   border-style: solid;
   border-color: #333 transparent transparent transparent;
 }
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  font-weight: bold;
+}
+
+.badge.fresh {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.badge.moderate {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.badge.stale {
+  background-color: #f8d7da;
+  color: #721c24;
+}

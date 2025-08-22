@@ -15,7 +15,21 @@ from uploader.tv_uploader import insert_or_update_series_data
 from tmdb.movie_api import get_movie_data
 from tmdb.tv_api import fetch_series
 
-from datetime import datetime
+from datetime import datetime, timedelta
+
+def classify_freshness(lastupdated):
+    if not lastupdated:
+        return "stale"  # treat missing as stale
+
+    now = datetime.utcnow()
+    delta = now - lastupdated
+
+    if delta <= timedelta(days=7):
+        return "fresh"
+    elif delta <= timedelta(days=30):
+        return "moderate"
+    else:
+        return "stale"
 
 # Add project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -109,6 +123,7 @@ async def search(request: Request):
                     row = cur.fetchone()
                     result["exists"] = bool(row)
                     result["lastupdated"] = row[0] if row else None
+                    result["freshness"] = classify_freshness(result["lastupdated"])
 
                 except Exception as e:
                     print(f"❌ DB check failed for {media_type} ID {tmdb_id}: {e}")

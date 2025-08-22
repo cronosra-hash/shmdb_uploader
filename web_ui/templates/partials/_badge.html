@@ -1,7 +1,11 @@
-<div class="badge {% if result.exists %}badge-success{% else %}badge-secondary{% endif %} tooltip-container" 
-      aria-describedby="tooltip-{{ result.id }}">
+<div class="badge {% if result.exists %}badge-success{% else %}badge-secondary{% endif %} tooltip-container"
+  aria-describedby="tooltip-{{ result.id }}">
   {% if result.exists %}In DB{% else %}New{% endif %}
   <span id="tooltip-{{ result.id }}" class="tooltip-text" role="tooltip">
     {% if result.exists %}Already uploaded to database{% else %}Not yet added to database{% endif %}
+  </span>
+  <span class="badge {{ result.freshness }}">
+    {% if result.freshness == 'fresh' %}
+    🟢 Updated < 7 days {% elif result.freshness=='moderate' %} 🟡 Updated < 30 days {% else %} 🔴 Stale {% endif %}
   </span>
 </div>
