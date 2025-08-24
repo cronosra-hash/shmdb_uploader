@@ -369,3 +369,24 @@ button:hover, a:hover {
   background-color: #f8d7da;
   color: #721c24;
 }
+
+.stats-panel {
+  background-color: #1e1e1e;
+  color: #f0f0f0;
+  padding: 1em;
+  border-radius: 8px;
+  margin-bottom: 2em;
+}
+.stats-panel h3 {
+  margin-top: 0;
+}
+.stats-panel ul {
+  list-style: none;
+  padding-left: 0;
+}
+.stats-panel li {
+  margin: 0.5em 0;
+}
+.stats-panel ul ul {
+  margin-left: 1em;
+}

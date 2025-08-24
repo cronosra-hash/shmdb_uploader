@@ -3,6 +3,7 @@ from db.logger import log_update
 from tmdb.tv_api import fetch_series, fetch_season
 import requests
 
+# 🔍 Fetch IMDb ID for a TV series using TMDB's external_ids endpoint
 def fetch_imdb_id(tv_id, api_key):
     url = f"https://api.themoviedb.org/3/tv/{tv_id}"
     params = {
@@ -18,7 +19,7 @@ def fetch_imdb_id(tv_id, api_key):
         print(f"Failed to fetch IMDb ID for TV ID {tv_id}: {e}")
         return None
 
-
+# 👤 Ensure a person (cast/crew) exists in the people table before linking th
 def ensure_person_exists(cur, person):
     cur.execute("SELECT 1 FROM people WHERE person_id = %s;", (person["id"],))
     if not cur.fetchone():
@@ -34,60 +35,63 @@ def ensure_person_exists(cur, person):
             person.get("popularity", 0)
         ))
 
+# 🚀 Main entry point to insert or update a TV series and its related data
 def insert_or_update_series_data(conn, series, tmdb_api_key):
+    # Fetch IMDb ID early so it's available for insert/update logic
+    series["imdb_id"] = fetch_imdb_id(series["id"], tmdb_api_key)
+
     with conn.cursor() as cur:
+        # Check if the series already exists in the database
         cur.execute("SELECT * FROM series WHERE series_id = %s;", (series["id"],))
         existing = cur.fetchone()
 
+        # Update or insert based on existence
         if existing:
             update_series_data(conn, series, existing)
         else:
-            insert_series_data(conn, series)
+            insert_series_data(conn, series, cur)
 
         series_id = series["id"]
-        series["imdb_id"] = fetch_imdb_id(series["id"], tmdb_api_key)
         series_title = series["name"]
 
-        # 🎭 Insert cast
+        # 🎭 Insert cast members (up to 30 for performance)
         for cast in series.get("credits", {}).get("cast", [])[:30]:
-                ensure_person_exists(cur, cast)
+            ensure_person_exists(cur, cast)
+            cur.execute("SELECT 1 FROM series_cast WHERE series_id = %s AND person_id = %s;", (series_id, cast["id"]))
+            if not cur.fetchone():
+                print(f"🎭 Added cast member '{cast['name']}' as '{cast.get('character')}' to series '{series_title}'")
+                log_update(cur, series_id, series_title, "cast_added", "cast", None, cast["name"])
+                cur.execute("""
+                    INSERT INTO series_cast (
+                        series_id, person_id, cast_order, character_name, lastupdated
+                    )
+                    VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
+                    ON CONFLICT DO NOTHING;
+                """, (
+                    series_id,
+                    cast["id"],
+                    cast.get("order", 0),
+                    cast.get("character")
+                ))
 
-        cur.execute("SELECT 1 FROM series_cast WHERE series_id = %s AND person_id = %s;", (series_id, cast["id"]))
-        if not cur.fetchone():
-            print(f"🎭 Added cast member '{cast['name']}' as '{cast.get('character')}' to series '{series_title}'")
-            log_update(cur, series_id, series_title, "cast_added", "cast", None, cast["name"])
-            cur.execute("""
-                INSERT INTO series_cast (
-                    series_id, person_id, cast_order, character_name, lastupdated
-                )
-                VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
-                ON CONFLICT DO NOTHING;
-            """, (
-                series_id,
-                cast["id"],
-                cast.get("order", 0),
-                cast.get("character")
-            ))
-
-        # 🎬 Insert crew
+        # 🎬 Insert crew members
         for crew in series.get("credits", {}).get("crew", []):
-                ensure_person_exists(cur, crew)
-
-        cur.execute("SELECT 1 FROM series_crew WHERE series_id = %s AND person_id = %s;", (series_id, crew["id"]))
-        if not cur.fetchone():
-            print(f"🎬 Added crew member '{crew['name']}' ({crew.get('job')}) to series '{series_title}'")
-            log_update(cur, series_id, series_title, "crew_added", "crew", None, crew["name"])
-            cur.execute("""
-                INSERT INTO series_crew (
-                    series_id, person_id, job, lastupdated
-                )
-                VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
-                ON CONFLICT DO NOTHING;
-            """, (
-                series_id,
-                crew["id"],
-                crew.get("job")
-            ))
+            ensure_person_exists(cur, crew)
+            cur.execute("SELECT 1 FROM series_crew WHERE series_id = %s AND person_id = %s;", (series_id, crew["id"]))
+            if not cur.fetchone():
+                print(f"🎬 Added crew member '{crew['name']}' ({crew.get('job')}) to series '{series_title}'")
+                log_update(cur, series_id, series_title, "crew_added", "crew", None, crew["name"])
+                cur.execute("""
+                    INSERT INTO series_crew (
+                        series_id, person_id, job, lastupdated
+                    )
+                    VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
+                    ON CONFLICT DO NOTHING;
+                """, (
+                    series_id,
+                    crew["id"],
+                    crew.get("job")
+                ))
 
         # 📺 Insert seasons and episodes
         for s in series.get("seasons", []):
@@ -113,6 +117,7 @@ def insert_or_update_series_data(conn, series, tmdb_api_key):
                     season_data.get("overview")
                 ))
 
+            # 🎞️ Insert episodes for each season
             for ep in season_data.get("episodes", []):
                 cur.execute("SELECT 1 FROM episode WHERE episode_id = %s;", (ep["id"],))
                 if not cur.fetchone():
@@ -140,8 +145,10 @@ def insert_or_update_series_data(conn, series, tmdb_api_key):
                         ep.get("still_path")
                     ))
 
-            conn.commit()
+        # ✅ Final commit after all inserts
+        conn.commit()
 
+# 🔄 Update existing series record and log field-level changes
 def update_series_data(conn, series, existing):
     with conn.cursor() as cur:
         fields = [
@@ -160,6 +167,7 @@ def update_series_data(conn, series, existing):
             series.get("homepage"), series.get("imdb_id")
         ]
 
+        # Compare each field and log changes
         for i, (field, new_value) in enumerate(zip(fields, new_data)):
             old_value = existing[i + 1]
             if field in ["first_air_date", "last_air_date"] and isinstance(new_value, str):
@@ -173,6 +181,7 @@ def update_series_data(conn, series, existing):
                 changed_fields.append((field, old_value, new_value))
                 log_update(cur, series["id"], series["name"], "field_change", field, old_value, new_value)
 
+        # Apply updates if any fields changed
         if updates:
             updates.append("lastupdated = CURRENT_TIMESTAMP")
             values.append(series["id"])
@@ -185,22 +194,22 @@ def update_series_data(conn, series, existing):
         else:
             print(f"✅ No changes for series: {series['name']}")
 
-def insert_series_data(conn, series):
-    with conn.cursor() as cur:
-        query = """
-        INSERT INTO series (series_id, name, overview, first_air_date, last_air_date,
-        number_of_seasons, number_of_episodes, popularity, vote_average, vote_count,
-        poster_path, backdrop_path, original_language, status, homepage, imdb_id, lastupdated)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-        ON CONFLICT DO NOTHING;
-        """
-        values = (
-            series["id"], series["name"], series.get("overview"), series.get("first_air_date"),
-            series.get("last_air_date"), series.get("number_of_seasons"), series.get("number_of_episodes"),
-            series.get("popularity"), series.get("vote_average"), series.get("vote_count"),
-            series.get("poster_path"), series.get("backdrop_path"), series.get("original_language"),
-            series.get("status"), series.get("homepage"), series.get("imdb_id")
-        )
-        cur.execute(query, values)
-        conn.commit()
-        print(f"✅ Inserted series: {series['name']}")
+# 🆕 Insert new series record and log each field as an insert
+def insert_series_data(conn, series, cur):
+    query = """
+    INSERT INTO series (series_id, name, overview, first_air_date, last_air_date,
+    number_of_seasons, number_of_episodes, popularity, vote_average, vote_count,
+    poster_path, backdrop_path, original_language, status, homepage, imdb_id, lastupdated)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+    ON CONFLICT DO NOTHING;
+    """
+    values = (
+        series["id"], series["name"], series.get("overview"), series.get("first_air_date"),
+        series.get("last_air_date"), series.get("number_of_seasons"), series.get("number_of_episodes"),
+        series.get("popularity"), series.get("vote_average"), series.get("vote_count"),
+        series.get("poster_path"), series.get("backdrop_path"), series.get("original_language"),
+        series.get("status"), series.get("homepage"), series.get("imdb_id")
+    )
+    cur.execute(query, values)
+    conn.commit()
+    print(f"✅ Inserted series: {series['name']}")

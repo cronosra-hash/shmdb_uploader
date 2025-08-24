@@ -84,7 +84,80 @@ def search_tmdb_combined(name):
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    conn = get_connection()
+    stats = {}
+    try:
+        with conn.cursor() as cur:
+            # Basic counts
+            cur.execute("SELECT COUNT(*) FROM movies;")
+            stats["movie_count"] = cur.fetchone()[0]
+
+            cur.execute("SELECT COUNT(*) FROM series;")
+            stats["series_count"] = cur.fetchone()[0]
+
+            # Last update timestamp
+            cur.execute("SELECT MAX(timestamp) FROM update_logs;")
+            stats["last_update"] = cur.fetchone()[0]
+
+            # Recent updates
+            cur.execute("SELECT COUNT(*) FROM update_logs WHERE timestamp >= %s;", 
+                        (datetime.utcnow() - timedelta(days=7),))
+            stats["recent_updates"] = cur.fetchone()[0]
+
+            # Freshness breakdown
+            cur.execute("SELECT lastupdated FROM movies UNION ALL SELECT lastupdated FROM series;")
+            freshness_counts = {"fresh": 0, "moderate": 0, "stale": 0}
+            for row in cur.fetchall():
+                freshness = classify_freshness(row[0])
+                freshness_counts[freshness] += 1
+            stats["freshness"] = freshness_counts
+
+            # Most updated title
+            cur.execute("""
+                SELECT movie_id, COUNT(*) AS changes
+                FROM update_logs
+                GROUP BY movie_id
+                ORDER BY changes DESC
+                LIMIT 1;
+            """)
+            stats["most_updated_id"] = cur.fetchone()[0]
+
+            # Most changed fields
+            cur.execute("""
+                SELECT field_name, COUNT(*) AS freq
+                FROM update_logs
+                GROUP BY field_name
+                ORDER BY freq DESC
+                LIMIT 5;
+            """)
+            stats["top_fields"] = cur.fetchall()
+
+            # Missing key fields
+            cur.execute("SELECT COUNT(*) FROM movies WHERE overview IS NULL OR release_date IS NULL;")
+            stats["movies_missing_fields"] = cur.fetchone()[0]
+
+            cur.execute("SELECT COUNT(*) FROM series WHERE overview IS NULL OR first_air_date IS NULL;")
+            stats["series_missing_fields"] = cur.fetchone()[0]
+
+            # Orphaned logs
+            cur.execute("""
+                SELECT COUNT(*) FROM update_logs
+                WHERE movie_id NOT IN (
+                    SELECT id FROM movies
+                    UNION
+                    SELECT series_id FROM series
+                );
+            """)
+            stats["orphaned_logs"] = cur.fetchone()[0]
+
+    finally:
+        conn.close()
+
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "stats": stats
+    })
+
 
 
 @app.post("/search", response_class=HTMLResponse)
