@@ -1,5 +1,6 @@
 # To Run
 
+source venv/bin/activate
 python -m uvicorn web_ui.app:app --reload
 
 # SHMDB Uploader
