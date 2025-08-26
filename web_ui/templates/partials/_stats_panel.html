@@ -1,0 +1,50 @@
+<div class="stats-panel grid-container fadeInUp">
+  <!-- 🎬 Volume -->
+  <div class="card">
+    <h4 class="text-neon-cyan">🎬 Volume</h4>
+    <ul>
+      <li>Movies: <strong>{{ stats.movie_count }}</strong></li>
+      <li>TV Series: <strong>{{ stats.series_count }}</strong></li>
+    </ul>
+  </div>
+
+  <!-- 📈 Updates -->
+  <div class="card">
+    <h4 class="text-neon-cyan">📈 Updates</h4>
+    <ul>
+      <li>Last: <span class="timestamp">{{ stats.last_update.strftime('%Y-%m-%d %H:%M:%S') if stats.last_update else 'N/A' }}</span></li>
+      <li>7-Day: <strong>{{ stats.recent_updates }}</strong></li>
+      <li>ID: <strong>{{ stats.most_updated_id }}</strong></li>
+    </ul>
+  </div>
+
+  <!-- 🧪 Freshness -->
+  <div class="card">
+    <h4 class="text-neon-cyan">🧪 Freshness</h4>
+    <ul>
+      <li><span class="badge fresh">Fresh</span>: {{ stats.freshness.fresh }}</li>
+      <li><span class="badge moderate">Moderate</span>: {{ stats.freshness.moderate }}</li>
+      <li><span class="badge stale">Stale</span>: {{ stats.freshness.stale }}</li>
+    </ul>
+  </div>
+
+  <!-- 🔧 Top Fields -->
+  <div class="card">
+    <h4 class="text-neon-cyan">🔧 Top Fields</h4>
+    <ul>
+      {% for field, count in stats.top_fields %}
+        <li>{{ field }} <span class="badge badge-secondary">{{ count }}</span></li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <!-- 🧹 Quality -->
+  <div class="card">
+    <h4 class="text-neon-cyan">🧹 Quality</h4>
+    <ul>
+      <li>Missing Movies: <strong>{{ stats.movies_missing_fields }}</strong></li>
+      <li>Missing Series: <strong>{{ stats.series_missing_fields }}</strong></li>
+      <li>Orphaned Logs: <strong>{{ stats.orphaned_logs }}</strong></li>
+    </ul>
+  </div>
+</div>

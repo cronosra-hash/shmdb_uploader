@@ -5,35 +5,14 @@
 {% block subheader %}<h2>Upload Movie or TV Series</h2>{% endblock %}
 
 {% block content %}
+
+<div class="page-wrapper">
   {% include "partials/_search_form.html" %}
-  <form method="post" action="/search_person">
-  <input type="text" name="person_name" placeholder="Search for a person" required>
-  <button type="submit">Search</button>
-</form>
 
+  <!-- Add spacing here -->
+  <div style="margin-top: 2em;"></div>
 
-<div class="stats-panel">
-  <h3>📊 System Stats</h3>
-  <ul>
-    <li>Total Movies: {{ stats.movie_count }}</li>
-    <li>Total TV Series: {{ stats.series_count }}</li>
-    <li>Last Update: {{ stats.last_update.strftime('%Y-%m-%d %H:%M:%S') if stats.last_update else 'N/A' }}</li>
-    <li>Updates in Last 7 Days: {{ stats.recent_updates }}</li>
-    <li>Fresh Entries: {{ stats.freshness.fresh }}</li>
-    <li>Moderate Entries: {{ stats.freshness.moderate }}</li>
-    <li>Stale Entries: {{ stats.freshness.stale }}</li>
-    <li>Most Updated Entry ID: {{ stats.most_updated_id }}</li>
-    <li>Top Changed Fields:
-      <ul>
-        {% for field, count in stats.top_fields %}
-          <li>{{ field }} ({{ count }})</li>
-        {% endfor %}
-      </ul>
-    </li>
-    <li>Movies Missing Key Fields: {{ stats.movies_missing_fields }}</li>
-    <li>Series Missing Key Fields: {{ stats.series_missing_fields }}</li>
-    <li>Orphaned Logs: {{ stats.orphaned_logs }}</li>
-  </ul>
+  {% include "partials/_stats_panel.html" %}
 </div>
 
 
