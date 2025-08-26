@@ -1,0 +1,65 @@
+
+{% extends "base.html" %}
+
+{% block title %}Person Search Results{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+  <h2 class="neon-subheading">Search Results</h2>
+
+  {% for person in people %}
+    <div class="card fadeInUp" style="padding: 2em; margin-bottom: 2em;">
+      <div style="display: flex; gap: 2em; flex-wrap: wrap;">
+        {% if person.profile_path %}
+          <img src="https://image.tmdb.org/t/p/w200{{ person.profile_path }}" alt="{{ person.name }}" style="box-shadow: 0 0 10px var(--neon-cyan); border-radius: 8px;">
+        {% endif %}
+        <div>
+          <h3 style="color: var(--neon-pink); text-shadow: 0 0 5px var(--neon-pink);">{{ person.name }}</h3>
+          <p><strong>Known for:</strong> {{ person.known_for_department }}</p>
+          <p><strong>Birthday:</strong> {{ person.birthday or 'N/A' }}</p>
+          <p><strong>Place of Birth:</strong> {{ person.place_of_birth or 'N/A' }}</p>
+          {% if person.also_known_as %}
+            <p><strong>Also Known As:</strong> {{ person.also_known_as | join(', ') }}</p>
+          {% endif %}
+          {% if person.biography %}
+            <details style="margin-top: 1em;">
+              <summary style="cursor: pointer; color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green);">Biography</summary>
+              <p style="margin-top: 0.5em;">{{ person.biography }}</p>
+            </details>
+          {% endif %}
+        </div>
+      </div>
+
+      <h4 class="neon-subheading">Credits</h4>
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; background-color: #111; color: var(--text-color); box-shadow: 0 0 10px var(--neon-cyan); border-radius: 8px;">
+          <thead>
+            <tr style="background-color: var(--card-bg);">
+              <th style="padding: 10px; border-bottom: 1px solid var(--neon-cyan); text-align: left;">Title</th>
+              <th style="padding: 10px; border-bottom: 1px solid var(--neon-cyan); text-align: left;">Type</th>
+              <th style="padding: 10px; border-bottom: 1px solid var(--neon-cyan); text-align: left;">Date</th>
+              <th style="padding: 10px; border-bottom: 1px solid var(--neon-cyan); text-align: left;">In DB</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for credit in person.credits %}
+              <tr>
+                <td style="padding: 10px;">{{ credit.title or credit.name }}</td>
+                <td style="padding: 10px;">{{ credit.media_type | capitalize }}</td>
+                <td style="padding: 10px;">{{ credit.release_date or credit.first_air_date or 'N/A' }}</td>
+                <td style="padding: 10px;">
+                  {% if credit.exists %}
+                    <span class="badge badge-success">✅ In DB</span>
+                  {% else %}
+                    <span class="badge badge-secondary">❌ Not in DB</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

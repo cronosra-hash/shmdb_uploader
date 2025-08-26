@@ -6,6 +6,11 @@
 
 {% block content %}
   {% include "partials/_search_form.html" %}
+  <form method="post" action="/search_person">
+  <input type="text" name="person_name" placeholder="Search for a person" required>
+  <button type="submit">Search</button>
+</form>
+
 
 <div class="stats-panel">
   <h3>📊 System Stats</h3>

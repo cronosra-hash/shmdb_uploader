@@ -276,3 +276,71 @@ async def upload(request: Request, tmdb_id: int, media_type: str):
     return templates.TemplateResponse(
         "result.html", {"request": request, "message": message, "changes": filtered_changes}
     )
+
+def search_person_tmdb(name):
+    url = "https://api.themoviedb.org/3/search/person"
+    params = {"api_key": TMDB_API_KEY, "query": name}
+    response = requests.get(url, params=params)
+    if response.status_code != 200:
+        return []
+
+    people = response.json().get("results", [])
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            for person in people:
+                person_id = person.get("id")
+
+                # Fetch detailed info
+                detail_url = f"https://api.themoviedb.org/3/person/{person_id}"
+                detail_response = requests.get(detail_url, params={"api_key": TMDB_API_KEY})
+                if detail_response.status_code == 200:
+                    details = detail_response.json()
+                    person["biography"] = details.get("biography")
+                    person["birthday"] = details.get("birthday")
+                    person["place_of_birth"] = details.get("place_of_birth")
+                    person["also_known_as"] = details.get("also_known_as")
+
+                # Fetch credits
+                credits_url = f"https://api.themoviedb.org/3/person/{person_id}/combined_credits"
+                credits_response = requests.get(credits_url, params={"api_key": TMDB_API_KEY})
+                if credits_response.status_code == 200:
+                    credits = credits_response.json().get("cast", [])
+                    for credit in credits:
+                        tmdb_id = credit.get("id")
+                        media_type = credit.get("media_type")
+                        date_str = credit.get("release_date") if media_type == "movie" else credit.get("first_air_date")
+
+                        # Check existence in DB
+                        if media_type == "movie":
+                            cur.execute("SELECT 1 FROM movies WHERE id = %s;", (tmdb_id,))
+                        elif media_type == "tv":
+                            cur.execute("SELECT 1 FROM series WHERE series_id = %s;", (tmdb_id,))
+                        else:
+                            credit["exists"] = False
+                            credit["sort_date"] = None
+                            continue
+
+                        credit["exists"] = cur.fetchone() is not None
+
+                        # Parse date for sorting
+                        try:
+                            credit["sort_date"] = datetime.strptime(date_str, "%Y-%m-%d") if date_str else None
+                        except Exception:
+                            credit["sort_date"] = None
+
+                    # Sort credits in descending order
+                    credits.sort(key=lambda x: x.get("sort_date") or datetime.min, reverse=True)
+                    person["credits"] = credits
+    finally:
+        conn.close()
+
+    return people
+
+@app.post("/search_person", response_class=HTMLResponse)
+async def search_person(request: Request):
+    form = await request.form()
+    name = form.get("person_name")
+    people = search_person_tmdb(name)
+    return templates.TemplateResponse("person_results.html", {"request": request, "people": people})
+
