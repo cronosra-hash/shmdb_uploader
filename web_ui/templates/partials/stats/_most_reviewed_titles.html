@@ -1,0 +1,8 @@
+<div class="card fadeInUp">
+  <h4 class="text-neon-cyan">📝 Most Reviewed Titles</h4>
+  <ul>
+    {% for title in most_reviewed_titles %}
+      <li>{{ title.title_name }} — 💬 {{ title.review_count }} reviews</li>
+    {% endfor %}
+  </ul>
+</div>

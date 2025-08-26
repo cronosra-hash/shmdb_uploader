@@ -1,0 +1,8 @@
+<div class="card fadeInUp">
+  <h4 class="text-neon-cyan">🎭 Most Prolific Actors</h4>
+  <ul>
+    {% for actor in prolific_actors %}
+      <li>{{ actor.actor_name }} — 🎬 {{ actor.appearances }} titles</li>
+    {% endfor %}
+  </ul>
+</div>

@@ -1,0 +1,8 @@
+<div class="card fadeInUp">
+  <h4 class="text-neon-cyan">🎬 Top Rated Movies</h4>
+  <ul>
+    {% for movie in top_rated_movies %}
+      <li>{{ movie.title_name }} — ⭐ {{ movie.rating }}</li>
+    {% endfor %}
+  </ul>
+</div>

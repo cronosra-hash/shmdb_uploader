@@ -1,0 +1,8 @@
+<div class="card fadeInUp">
+  <h4 class="text-neon-cyan">💎 Hidden Gems</h4>
+  <ul>
+    {% for gem in hidden_gems %}
+      <li>{{ gem.title_name }} — ⭐ {{ gem.rating }} / 💬 {{ gem.review_count }} reviews</li>
+    {% endfor %}
+  </ul>
+</div>

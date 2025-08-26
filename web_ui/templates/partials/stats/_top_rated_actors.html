@@ -1,0 +1,8 @@
+<div class="card fadeInUp">
+  <h4 class="text-neon-cyan">🌟 Top-Rated Actors</h4>
+  <ul>
+    {% for actor in top_rated_actors %}
+      <li>{{ actor.actor_name }} — ⭐ {{ actor.avg_rating }} ({{ actor.title_count }} titles)</li>
+    {% endfor %}
+  </ul>
+</div>

@@ -1,0 +1,8 @@
+<div class="card fadeInUp">
+  <h4 class="text-neon-cyan">🎧 Popular Genres</h4>
+  <ul>
+    {% for genre in popular_genres %}
+      <li>{{ genre.genre }} — 📚 {{ genre.genre_count }} titles</li>
+    {% endfor %}
+  </ul>
+</div>

@@ -17,6 +17,28 @@ from tmdb.tv_api import fetch_series
 
 from datetime import datetime, timedelta
 
+from fastapi import APIRouter, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from services import stats
+
+router = APIRouter()
+templates = Jinja2Templates(directory="templates")
+
+@router.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "top_rated_movies": stats.get_top_rated_movies(),
+        "most_reviewed_titles": stats.get_most_reviewed_titles(),
+        "prolific_actors": stats.get_prolific_actors(),
+        "top_rated_actors": stats.get_top_rated_actors(),
+        "active_release_years": stats.get_active_release_years(),
+        "trending_titles": stats.get_trending_titles(),
+        "popular_genres": stats.get_popular_genres(),
+        "hidden_gems": stats.get_hidden_gems(),
+    })
+
 def classify_freshness(lastupdated):
     if not lastupdated:
         return "stale"  # treat missing as stale
@@ -157,7 +179,6 @@ async def read_root(request: Request):
         "request": request,
         "stats": stats
     })
-
 
 
 @app.post("/search", response_class=HTMLResponse)
