@@ -1,29 +1,72 @@
+# ─── Standard Library Imports ────────────────────────────────────────────────
 import os
 import sys
+from datetime import datetime, timedelta
+
+# ─── Third-Party Imports ─────────────────────────────────────────────────────
 import requests
-from fastapi import FastAPI, Request
+from dotenv import load_dotenv
+from fastapi import FastAPI, Request, APIRouter
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from dotenv import load_dotenv
+
+# ─── Internal Project Imports ────────────────────────────────────────────────
+from config.settings import TMDB_API_KEY
 from db.connection import get_connection
 
-# TMDB API key
-from config.settings import TMDB_API_KEY
+# Uploader modules
 from uploader.movie_uploader import insert_or_update_movie_data
 from uploader.tv_uploader import insert_or_update_series_data
+
+# TMDB API modules
 from tmdb.movie_api import get_movie_data
 from tmdb.tv_api import fetch_series
 
+# ─── Standard Library Imports ────────────────────────────────────────────────
+import os
+import sys
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+# ─── Third-Party Imports ─────────────────────────────────────────────────────
+import requests
+from dotenv import load_dotenv
+from fastapi import FastAPI, Request, APIRouter
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
+# ─── Internal Project Imports ────────────────────────────────────────────────
+from config.settings import TMDB_API_KEY
+from db.connection import get_connection
+
+# Uploader modules
+from uploader.movie_uploader import insert_or_update_movie_data
+from uploader.tv_uploader import insert_or_update_series_data
+
+# TMDB API modules
+from tmdb.movie_api import get_movie_data
+from tmdb.tv_api import fetch_series
+
+# Services
 from services import stats
 
+# ─── Environment Setup ───────────────────────────────────────────────────────
+# Add project root to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# Load environment variables
+load_dotenv()
+
+# ─── FastAPI App Initialization ──────────────────────────────────────────────
+app = FastAPI()
+
+# Static files and templates
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="web_ui/templates")
+
+# ─── Router Setup ────────────────────────────────────────────────────────────
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
 @router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
@@ -38,6 +81,9 @@ async def index(request: Request):
         "popular_genres": stats.get_popular_genres(),
         "hidden_gems": stats.get_hidden_gems(),
     })
+
+# ─── Register Router ─────────────────────────────────────────────────────────
+app.include_router(router)
 
 def classify_freshness(lastupdated):
     if not lastupdated:
@@ -63,46 +109,12 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="web_ui/templates")
 
-def filter_changes(raw_changes):
-    """
-    Filters out changes where old_value == new_value or both are empty.
-    Formats timestamps for display.
-    """
-    filtered = []
-    for change in raw_changes:
-        old = change.get("old_value")
-        new = change.get("new_value")
-
-        if (old is None and new is None) or (str(old).strip() == "" and str(new).strip() == ""):
-            continue
-        if str(old) == str(new):
-            continue
-
-        ts = change.get("timestamp")
-        if isinstance(ts, datetime):
-            change["timestamp"] = ts.strftime("%Y-%m-%d %H:%M:%S")
-
-        filtered.append(change)
-
-    return filtered
-
-def search_tmdb_combined(name):
-    endpoints = ["movie", "tv"]
-    combined_results = []
-
-    for media_type in endpoints:
-        url = f"https://api.themoviedb.org/3/search/{media_type}"
-        params = {"api_key": TMDB_API_KEY, "query": name, "include_adult": False}
-        response = requests.get(url, params=params)
-        if response.status_code == 200:
-            results = response.json().get("results", [])
-            for result in results:
-                result["media_type"] = media_type
-                combined_results.append(result)
-
-    combined_results.sort(key=lambda x: x.get("popularity", 0), reverse=True)
-    return combined_results
-
+@app.post("/search_person", response_class=HTMLResponse)
+async def search_person(request: Request):
+    form = await request.form()
+    name = form.get("person_name")
+    people = search_person_tmdb(name)
+    return templates.TemplateResponse("person_results.html", {"request": request, "people": people})
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
@@ -232,7 +244,6 @@ async def search(request: Request):
         "search_results.html", {"request": request, "results": annotated_results}
     )
 
-
 @app.get("/upload", response_class=HTMLResponse)
 async def upload(request: Request, tmdb_id: int, media_type: str):
     try:
@@ -298,6 +309,60 @@ async def upload(request: Request, tmdb_id: int, media_type: str):
         "result.html", {"request": request, "message": message, "changes": filtered_changes}
     )
 
+def classify_freshness(lastupdated):
+    if not lastupdated:
+        return "stale"  # treat missing as stale
+
+    now = datetime.utcnow()
+    delta = now - lastupdated
+
+    if delta <= timedelta(days=7):
+        return "fresh"
+    elif delta <= timedelta(days=30):
+        return "moderate"
+    else:
+        return "stale"
+
+def filter_changes(raw_changes):
+    """
+    Filters out changes where old_value == new_value or both are empty.
+    Formats timestamps for display.
+    """
+    filtered = []
+    for change in raw_changes:
+        old = change.get("old_value")
+        new = change.get("new_value")
+
+        if (old is None and new is None) or (str(old).strip() == "" and str(new).strip() == ""):
+            continue
+        if str(old) == str(new):
+            continue
+
+        ts = change.get("timestamp")
+        if isinstance(ts, datetime):
+            change["timestamp"] = ts.strftime("%Y-%m-%d %H:%M:%S")
+
+        filtered.append(change)
+
+    return filtered
+
+def search_tmdb_combined(name):
+    endpoints = ["movie", "tv"]
+    combined_results = []
+
+    for media_type in endpoints:
+        url = f"https://api.themoviedb.org/3/search/{media_type}"
+        params = {"api_key": TMDB_API_KEY, "query": name, "include_adult": False}
+        response = requests.get(url, params=params)
+        if response.status_code == 200:
+            results = response.json().get("results", [])
+            for result in results:
+                result["media_type"] = media_type
+                combined_results.append(result)
+
+    combined_results.sort(key=lambda x: x.get("popularity", 0), reverse=True)
+    return combined_results
+
 def search_person_tmdb(name):
     url = "https://api.themoviedb.org/3/search/person"
     params = {"api_key": TMDB_API_KEY, "query": name}
@@ -357,11 +422,3 @@ def search_person_tmdb(name):
         conn.close()
 
     return people
-
-@app.post("/search_person", response_class=HTMLResponse)
-async def search_person(request: Request):
-    form = await request.form()
-    name = form.get("person_name")
-    people = search_person_tmdb(name)
-    return templates.TemplateResponse("person_results.html", {"request": request, "people": people})
-
