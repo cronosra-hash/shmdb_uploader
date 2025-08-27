@@ -72,14 +72,14 @@ router = APIRouter()
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "top_rated_movies": stats.get_top_rated_movies(),
+        "active_release_years": stats.get_active_release_years(),
+        "hidden_gems": stats.get_hidden_gems(),
         "most_reviewed_titles": stats.get_most_reviewed_titles(),
+        "popular_genres": stats.get_popular_genres(),
         "prolific_actors": stats.get_prolific_actors(),
         "top_rated_actors": stats.get_top_rated_actors(),
-        "active_release_years": stats.get_active_release_years(),
+        "top_rated_movies": stats.get_top_rated_movies(),
         "trending_titles": stats.get_trending_titles(),
-        "popular_genres": stats.get_popular_genres(),
-        "hidden_gems": stats.get_hidden_gems(),
     })
 
 # ─── Register Router ─────────────────────────────────────────────────────────
@@ -195,6 +195,23 @@ async def read_root(request: Request):
             """)
             stats["active_release_years"] = cur.fetchall()
 
+            # Hidden gems
+            cur.execute("""
+                SELECT id, title, vote_average, vote_count
+                FROM movies
+                WHERE vote_average >= 8.0 AND vote_count < 10
+                ORDER BY vote_average DESC
+                LIMIT 10;
+            """)
+            hidden_gems = [
+                {
+                    "id": row[0],
+                    "title": row[1],
+                    "vote_average": row[2],
+                    "vote_count": row[3]
+                }
+                for row in cur.fetchall()
+            ]
 
     finally:
         conn.close()
@@ -205,7 +222,9 @@ async def read_root(request: Request):
             "active_release_years": [
         {"release_year": row[0], "title_count": row[1]}
         for row in stats["active_release_years"]
-    ]
+         ],
+        "hidden_gems": hidden_gems,
+
     })
 
 
