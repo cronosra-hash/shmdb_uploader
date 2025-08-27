@@ -184,12 +184,28 @@ async def read_root(request: Request):
             """)
             stats["orphaned_logs"] = cur.fetchone()[0]
 
+            # Active release years
+            cur.execute("""
+                SELECT mad.release_year, COUNT(*) AS title_count
+                FROM movies m
+                JOIN movie_additional_details mad ON mad.movie_id = m.id
+                GROUP BY mad.release_year
+                ORDER BY title_count DESC
+                LIMIT 10;
+            """)
+            stats["active_release_years"] = cur.fetchall()
+
+
     finally:
         conn.close()
 
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "stats": stats
+        "stats": stats,
+            "active_release_years": [
+        {"release_year": row[0], "title_count": row[1]}
+        for row in stats["active_release_years"]
+    ]
     })
 
 

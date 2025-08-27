@@ -1,8 +1,11 @@
 <div class="card fadeInUp">
   <h4 class="text-neon-cyan">📅 Most Active Years</h4>
-  <ul>
+  <ul class="grid grid-cols-2 gap-2 text-sm text-neon-pink">
     {% for year in active_release_years %}
-      <li>{{ year.release_year }} — 🎞️ {{ year.title_count }} titles</li>
+    <li class="flex justify-between">
+      <span>{{ year.release_year }}</span>
+      <span>🎞️ {{ year.title_count }}</span>
+    </li>
     {% endfor %}
   </ul>
 </div>
