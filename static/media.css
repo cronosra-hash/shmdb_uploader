@@ -1,0 +1,7 @@
+/* 🖼️ Poster Image */
+.result-item img {
+  max-width: 100px;
+  display: block;
+  margin-top: 10px;
+  box-shadow: 0 0 10px var(--neon-cyan);
+}

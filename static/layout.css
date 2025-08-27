@@ -1,0 +1,35 @@
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 2em;
+  padding: 3em 2em;
+}
+
+.no-updates {
+  background-color: #222;
+  padding: 1em;
+  border-radius: 6px;
+  font-style: italic;
+  color: #888;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(255, 0, 255, 0.2);
+}
+
+.page-wrapper {
+  padding-top: 3em;
+  padding-bottom: 3em;
+}
+
+.update-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.update-item {
+  margin-bottom: 0.75em;
+  background: var(--card-bg);
+  padding: 0.75em;
+  border-radius: 6px;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.2);
+  color: var(--text-color);
+}

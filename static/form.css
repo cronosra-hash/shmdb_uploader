@@ -1,0 +1,24 @@
+form {
+  background-color: var(--card-bg);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px var(--neon-cyan);
+  max-width: 500px;
+  margin: auto;
+  color: var(--text-color);
+}
+
+label {
+  color: var(--neon-green);
+  text-shadow: 0 0 5px var(--neon-green);
+}
+
+input,
+select {
+  padding: 10px;
+  border: 1px solid var(--neon-cyan);
+  border-radius: 4px;
+  background-color: #111;
+  color: var(--text-color);
+  box-shadow: 0 0 5px var(--neon-cyan);
+}

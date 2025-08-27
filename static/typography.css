@@ -1,0 +1,29 @@
+.timestamp {
+    font-weight: bold;
+    color: var(--neon-green);
+    /* color: var(--neon-pink); */
+    margin-right: 0.5em;
+    text-shadow: 0 0 5px var(--neon-green);
+    /* text-shadow: 0 0 5px var(--neon-pink); */
+    font-size: 0.75em;
+}
+
+.change-type {
+    color: var(--neon-pink);
+    font-weight: bold;
+    text-shadow: 0 0 5px var(--neon-pink);
+}
+
+.field {
+    font-style: italic;
+    margin-left: 0.25em;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 5px var(--neon-cyan);
+}
+
+.neon-subheading {
+    color: var(--neon-cyan);
+    text-shadow: 0 0 5px var(--neon-cyan), 0 0 10px var(--neon-cyan);
+    margin-top: 2em;
+    margin-bottom: 1em;
+}
