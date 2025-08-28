@@ -228,4 +228,4 @@ def insert_or_update_movie_data(conn, movie):
                 print(f"🎬 Added crew member '{crew['name']}' ({crew.get('job')}) to movie '{movie['title']}'")
 
         # Commit all changes to the database
-
+        conn.commit()
