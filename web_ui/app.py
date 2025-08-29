@@ -230,8 +230,22 @@ async def read_root(request: Request):
                 for row in cur.fetchall()
             ]
 
-
-
+            # Popular genres
+            cur.execute("""
+                SELECT g.name AS genre, COUNT(*) AS genre_count
+                FROM genres g
+                JOIN movie_genres mg ON mg.genre_id = g.id
+                GROUP BY g.name
+                ORDER BY genre_count DESC
+                LIMIT 10;
+            """)
+            popular_genres = [
+                {
+                    "genre": row[0],
+                    "genre_count": row[1]
+                }
+                for row in cur.fetchall()
+            ]
 
 
 
@@ -247,6 +261,7 @@ async def read_root(request: Request):
          ],
         "hidden_gems": hidden_gems,
         "most_reviewed_titles": most_reviewed_titles,
+        "popular_genres": popular_genres,
     })
 
 

@@ -2,7 +2,9 @@
   <h3 class="text-neon-cyan">📝 Most Reviewed Titles</h3>
   <ul class="grid grid-cols-2 gap-2 text-sm text-neon-pink">
     {% for title in most_reviewed_titles %}
-        <li>{{ title.title }} — 💬 {{ title.vote_count }} reviews</li>
+        <li>
+          {{ title.title }} — 💬 {{ title.vote_count }} reviews
+        </li>
     {% endfor %}
   </ul>
 </div>
