@@ -287,6 +287,24 @@ async def read_root(request: Request):
                 for row in cur.fetchall()
             ]
 
+            # top rated movies
+            cur.execute("""
+                SELECT id, title, vote_average
+                FROM movies
+                WHERE vote_average IS NOT NULL
+                ORDER BY vote_average DESC
+                LIMIT 10;
+            """)
+            top_rated_movies = [
+                {
+                    "id": row[0],
+                    "title": row[1],
+                    "vote_average": row[2]
+                }
+                for row in cur.fetchall()
+            ]
+
+
     finally:
         conn.close()
 
@@ -301,7 +319,9 @@ async def read_root(request: Request):
         "most_reviewed_titles": most_reviewed_titles,
         "popular_genres": popular_genres,
         "prolific_actors": prolific_actors,
-        "top_rated_actors": top_rated_actors
+        "top_rated_actors": top_rated_actors,
+        "top_rated_movies": top_rated_movies
+
     })
 
 
