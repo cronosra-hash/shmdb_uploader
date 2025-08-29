@@ -199,7 +199,7 @@ async def read_root(request: Request):
             cur.execute("""
                 SELECT id, title, vote_average, vote_count
                 FROM movies
-                WHERE vote_average >= 8.0 AND vote_count < 10
+                WHERE vote_average >= 7.0 AND vote_count < 1000
                 ORDER BY vote_average DESC
                 LIMIT 10;
             """)
@@ -247,7 +247,22 @@ async def read_root(request: Request):
                 for row in cur.fetchall()
             ]
 
-
+            # Prolific actors
+            cur.execute("""
+                SELECT p.name AS actor_name, COUNT(*) AS appearances
+                FROM moviecast mc
+                JOIN people p ON mc.person_id = p.person_id
+                GROUP BY p.name
+                ORDER BY appearances DESC
+                LIMIT 10;
+            """)
+            prolific_actors = [
+                {
+                    "actor_name": row[0],
+                    "appearances": row[1]
+                }
+                for row in cur.fetchall()
+            ]
 
     finally:
         conn.close()
@@ -262,6 +277,7 @@ async def read_root(request: Request):
         "hidden_gems": hidden_gems,
         "most_reviewed_titles": most_reviewed_titles,
         "popular_genres": popular_genres,
+        "prolific_actors": prolific_actors,
     })
 
 
