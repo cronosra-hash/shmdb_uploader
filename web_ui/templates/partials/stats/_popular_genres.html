@@ -2,9 +2,9 @@
   <h3 class="text-neon-cyan">🎧 Popular Genres</h3>
   <ul class="grid grid-cols-2 gap-2 text-sm text-neon-pink">
     {% for genre in popular_genres %}
-      <li>
-        {{ genre.genre }} — 📚 {{ genre.genre_count }} titles
-      </li>
+    <li>
+      {{ genre.genre }} — 📚 {{ genre.genre_count }} titles
+    </li>
     {% endfor %}
   </ul>
 </div>

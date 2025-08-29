@@ -264,6 +264,29 @@ async def read_root(request: Request):
                 for row in cur.fetchall()
             ]
 
+            # top rated actors
+            cur.execute("""
+                SELECT p.name AS actor_name,
+                    ROUND(AVG(m.vote_average)::numeric, 2) AS avg_rating,
+                    COUNT(*) AS title_count
+                FROM moviecast mc
+                JOIN people p ON mc.person_id = p.person_id
+                JOIN movies m ON mc.movie_id = m.id
+                WHERE m.vote_average IS NOT NULL
+                GROUP BY p.name
+                HAVING COUNT(*) > 5
+                ORDER BY avg_rating DESC
+                LIMIT 10;
+            """)
+            top_rated_actors = [
+                {
+                    "actor_name": row[0],
+                    "avg_rating": row[1],
+                    "title_count": row[2]
+                }
+                for row in cur.fetchall()
+            ]
+
     finally:
         conn.close()
 
@@ -278,6 +301,7 @@ async def read_root(request: Request):
         "most_reviewed_titles": most_reviewed_titles,
         "popular_genres": popular_genres,
         "prolific_actors": prolific_actors,
+        "top_rated_actors": top_rated_actors
     })
 
 
