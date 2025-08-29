@@ -213,6 +213,28 @@ async def read_root(request: Request):
                 for row in cur.fetchall()
             ]
 
+            # Most reviewed titles
+            cur.execute("""
+                SELECT id, title, vote_count
+                FROM movies
+                WHERE vote_count IS NOT NULL
+                ORDER BY vote_count DESC
+                LIMIT 10;
+            """)
+            most_reviewed_titles = [
+                {
+                    "id": row[0],
+                    "title": row[1],
+                    "vote_count": row[2]
+                }
+                for row in cur.fetchall()
+            ]
+
+
+
+
+
+
     finally:
         conn.close()
 
@@ -224,7 +246,7 @@ async def read_root(request: Request):
         for row in stats["active_release_years"]
          ],
         "hidden_gems": hidden_gems,
-
+        "most_reviewed_titles": most_reviewed_titles,
     })
 
 
