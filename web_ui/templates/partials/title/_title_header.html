@@ -1,0 +1,19 @@
+<div class="card fadeInUp p-4 bg-dark-glow">
+  <h2 class="text-neon-cyan text-2xl font-bold mb-2">{{ title.title }}</h2>
+  <div class="flex flex-wrap gap-2 text-sm text-neon-pink mb-3">
+    <span>📅 {{ title.release_year }}</span>
+    <span>⏱️ {{ title.runtime_minutes }} min</span>
+    {% for genre in title.genres %}
+    <span class="badge badge-neon">{{ genre }}</span>
+    {% endfor %}
+  </div>
+
+  <div class="flex items-center gap-4 text-neon-green text-sm">
+    <span>⭐ {{ title.vote_average | round(1) }}</span>
+    <span>📝 {{ title.vote_count }} reviews</span>
+  </div>
+
+  {% if title.poster_url %}
+  <img src="https://image.tmdb.org/t/p/w185{{ title.poster_path }}" alt="Poster for {{ title.title_name }}" class="mt-4 rounded shadow-neon" />
+  {% endif %}
+</div>

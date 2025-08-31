@@ -1,0 +1,31 @@
+<div class="text-xs text-neon-yellow mt-4 space-y-1">
+  {% if diagnostics.duration_ms %}
+  <p>⏱️ <span class="font-semibold">Query Time:</span> {{ diagnostics.duration_ms }} ms</p>
+  {% endif %}
+
+  <p>📦 <span class="font-semibold">Records:</span> {{ diagnostics.record_count }}</p>
+  <p>🕒 <span class="font-semibold">Fetched:</span> {{ diagnostics.last_fetched }}</p>
+
+  {% if diagnostics.freshness %}
+  <p>🌿 <span class="font-semibold">Freshness:</span> {{ diagnostics.freshness }}</p>
+  {% endif %}
+
+  {% if diagnostics.volatility %}
+  <p>📊 <span class="font-semibold">Volatility:</span>
+    {% for field, score in diagnostics.volatility.items() %}
+    <span class="inline-block bg-neon-pink text-black px-1 rounded-sm mr-1">{{ field }}: {{ score }}</span>
+    {% endfor %}
+  </p>
+  {% endif %}
+
+  {% if diagnostics.status != "ok" %}
+  <p class="text-red-500">⚠️ <span class="font-semibold">Error:</span> {{ diagnostics.status }}</p>
+  {% if diagnostics.traceback %}
+  <details class="bg-black text-red-400 p-2 rounded-sm mt-1">
+    <summary class="cursor-pointer">Show Traceback</summary>
+    <pre class="whitespace-pre-wrap text-xs">{{ diagnostics.traceback }}</pre>
+  </details>
+  {% endif %}
+  {% endif %}
+</div>
+<!-- Diagnostic Footer -->

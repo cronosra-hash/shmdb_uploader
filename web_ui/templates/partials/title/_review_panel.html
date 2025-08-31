@@ -1,0 +1,19 @@
+<div class="card fadeInUp mt-6">
+  <h4 class="text-neon-yellow mb-2">📝 Reviews</h4>
+  {% if reviews %}
+  <div class="space-y-4">
+    {% for review in reviews %}
+    <div class="bg-dark-glow p-3 rounded shadow hover:shadow-neon transition">
+      <div class="flex justify-between items-center mb-1">
+        <span class="text-neon-pink font-semibold">{{ review.username }}</span>
+        <span class="text-neon-green text-sm">⭐ {{ review.rating }}/10</span>
+      </div>
+      <div class="text-sm text-gray-300">{{ review.review_text }}</div>
+      <div class="text-xs text-gray-500 mt-1">{{ review.created_at.strftime('%b %d, %Y') }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-gray-400 italic">No reviews yet. Be the first to share your thoughts!</div>
+  {% endif %}
+</div>

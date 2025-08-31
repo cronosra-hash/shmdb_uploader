@@ -21,6 +21,11 @@ from tmdb.movie_api import get_movie_data
 from tmdb.tv_api import fetch_series
 from services import stats
 from services.freshness import get_freshness_summary  # or wherever you define it
+from services.titles import get_title_by_id
+from services.diagnostics import wrap_query
+
+# from services.reviews import get_reviews_for_title
+from services.actors import get_cast_for_title
 
 # ─── Environment Setup ───────────────────────────────────────────────────────
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -34,13 +39,36 @@ templates = Jinja2Templates(directory="web_ui/templates")
 # ─── Router Setup ────────────────────────────────────────────────────────────
 router = APIRouter()
 
+
+@router.get("/title/{title_id}", response_class=HTMLResponse)
+async def title_detail(request: Request, title_id: int):
+    diagnostics = wrap_query("get_title_by_id", lambda: [get_title_by_id(title_id)])
+
+    title = diagnostics["data"][0] if diagnostics["record_count"] else None
+    cast = get_cast_for_title(title_id)
+    # reviews = get_reviews_for_title(title_id)
+
+    return templates.TemplateResponse(
+        "title_detail.html",
+        {
+            "request": request,
+            "title": title,
+            "cast": cast,
+            "diagnostics": diagnostics,
+            # "reviews": reviews
+        },
+    )
+
+
 @router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("index.html", get_stats_context(request))
 
+
 @router.get("/uploader", response_class=HTMLResponse, name="uploader")
 async def uploader(request: Request):
     return templates.TemplateResponse("uploader.html", get_stats_context(request))
+
 
 def get_stats_context(request: Request):
     return {
@@ -55,11 +83,13 @@ def get_stats_context(request: Request):
             "top_rated_movies": stats.get_top_rated_movies(),
             "trending_titles": stats.get_trending_titles(),
             "freshness": get_freshness_summary(),
-        }
+        },
     }
+
 
 # ─── Register Router ─────────────────────────────────────────────────────────
 app.include_router(router)
+
 
 # ─── Utility Functions ───────────────────────────────────────────────────────
 def classify_freshness(lastupdated):
@@ -74,12 +104,16 @@ def classify_freshness(lastupdated):
     else:
         return "stale"
 
+
 @app.post("/search_person", response_class=HTMLResponse)
 async def search_person(request: Request):
     form = await request.form()
     name = form.get("person_name")
     people = search_person_tmdb(name)
-    return templates.TemplateResponse("person_results.html", {"request": request, "people": people})
+    return templates.TemplateResponse(
+        "person_results.html", {"request": request, "people": people}
+    )
+
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
@@ -99,12 +133,16 @@ async def read_root(request: Request):
             stats["last_update"] = cur.fetchone()[0]
 
             # Recent updates
-            cur.execute("SELECT COUNT(*) FROM update_logs WHERE timestamp >= %s;", 
-                        (datetime.utcnow() - timedelta(days=7),))
+            cur.execute(
+                "SELECT COUNT(*) FROM update_logs WHERE timestamp >= %s;",
+                (datetime.utcnow() - timedelta(days=7),),
+            )
             stats["recent_updates"] = cur.fetchone()[0]
 
             # Freshness breakdown
-            cur.execute("SELECT lastupdated FROM movies UNION ALL SELECT lastupdated FROM series;")
+            cur.execute(
+                "SELECT lastupdated FROM movies UNION ALL SELECT lastupdated FROM series;"
+            )
             freshness_counts = {"fresh": 0, "moderate": 0, "stale": 0}
             for row in cur.fetchall():
                 freshness = classify_freshness(row[0])
@@ -132,10 +170,14 @@ async def read_root(request: Request):
             stats["top_fields"] = cur.fetchall()
 
             # Missing key fields
-            cur.execute("SELECT COUNT(*) FROM movies WHERE overview IS NULL OR release_date IS NULL;")
+            cur.execute(
+                "SELECT COUNT(*) FROM movies WHERE overview IS NULL OR release_date IS NULL;"
+            )
             stats["movies_missing_fields"] = cur.fetchone()[0]
 
-            cur.execute("SELECT COUNT(*) FROM series WHERE overview IS NULL OR first_air_date IS NULL;")
+            cur.execute(
+                "SELECT COUNT(*) FROM series WHERE overview IS NULL OR first_air_date IS NULL;"
+            )
             stats["series_missing_fields"] = cur.fetchone()[0]
 
             # Orphaned logs
@@ -173,7 +215,7 @@ async def read_root(request: Request):
                     "id": row[0],
                     "title": row[1],
                     "vote_average": row[2],
-                    "vote_count": row[3]
+                    "vote_count": row[3],
                 }
                 for row in cur.fetchall()
             ]
@@ -187,11 +229,7 @@ async def read_root(request: Request):
                 LIMIT 10;
             """)
             most_reviewed_titles = [
-                {
-                    "id": row[0],
-                    "title": row[1],
-                    "vote_count": row[2]
-                }
+                {"id": row[0], "title": row[1], "vote_count": row[2]}
                 for row in cur.fetchall()
             ]
 
@@ -205,11 +243,7 @@ async def read_root(request: Request):
                 LIMIT 10;
             """)
             popular_genres = [
-                {
-                    "genre": row[0],
-                    "genre_count": row[1]
-                }
-                for row in cur.fetchall()
+                {"genre": row[0], "genre_count": row[1]} for row in cur.fetchall()
             ]
 
             # Prolific actors
@@ -222,11 +256,7 @@ async def read_root(request: Request):
                 LIMIT 10;
             """)
             prolific_actors = [
-                {
-                    "actor_name": row[0],
-                    "appearances": row[1]
-                }
-                for row in cur.fetchall()
+                {"actor_name": row[0], "appearances": row[1]} for row in cur.fetchall()
             ]
 
             # top rated actors
@@ -244,11 +274,7 @@ async def read_root(request: Request):
                 LIMIT 10;
             """)
             top_rated_actors = [
-                {
-                    "actor_name": row[0],
-                    "avg_rating": row[1],
-                    "title_count": row[2]
-                }
+                {"actor_name": row[0], "avg_rating": row[1], "title_count": row[2]}
                 for row in cur.fetchall()
             ]
 
@@ -261,11 +287,7 @@ async def read_root(request: Request):
                 LIMIT 10;
             """)
             top_rated_movies = [
-                {
-                    "id": row[0],
-                    "title": row[1],
-                    "vote_average": row[2]
-                }
+                {"id": row[0], "title": row[1], "vote_average": row[2]}
                 for row in cur.fetchall()
             ]
 
@@ -278,33 +300,31 @@ async def read_root(request: Request):
                 LIMIT 10;
             """)
             trending_titles = [
-                {
-                    "id": row[0],
-                    "title": row[1],
-                    "lastupdated": row[2]
-                }
+                {"id": row[0], "title": row[1], "lastupdated": row[2]}
                 for row in cur.fetchall()
             ]
 
     finally:
         conn.close()
 
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "stats": stats,
+    return templates.TemplateResponse(
+        "index.html",
+        {
+            "request": request,
+            "stats": stats,
             "active_release_years": [
-        {"release_year": row[0], "title_count": row[1]}
-        for row in stats["active_release_years"]
-         ],
-        "hidden_gems": hidden_gems,
-        "most_reviewed_titles": most_reviewed_titles,
-        "popular_genres": popular_genres,
-        "prolific_actors": prolific_actors,
-        "top_rated_actors": top_rated_actors,
-        "top_rated_movies": top_rated_movies,
-        "trending_titles": trending_titles
-
-    })
+                {"release_year": row[0], "title_count": row[1]}
+                for row in stats["active_release_years"]
+            ],
+            "hidden_gems": hidden_gems,
+            "most_reviewed_titles": most_reviewed_titles,
+            "popular_genres": popular_genres,
+            "prolific_actors": prolific_actors,
+            "top_rated_actors": top_rated_actors,
+            "top_rated_movies": top_rated_movies,
+            "trending_titles": trending_titles,
+        },
+    )
 
 
 @app.post("/search", response_class=HTMLResponse)
@@ -331,9 +351,14 @@ async def search(request: Request):
 
                 try:
                     if media_type == "movie":
-                        cur.execute("SELECT lastupdated FROM movies WHERE id = %s;", (tmdb_id,))
+                        cur.execute(
+                            "SELECT lastupdated FROM movies WHERE id = %s;", (tmdb_id,)
+                        )
                     elif media_type == "tv":
-                        cur.execute("SELECT lastupdated FROM series WHERE series_id = %s;", (tmdb_id,))
+                        cur.execute(
+                            "SELECT lastupdated FROM series WHERE series_id = %s;",
+                            (tmdb_id,),
+                        )
                     else:
                         result["exists"] = False
                         result["lastupdated"] = None
@@ -358,6 +383,7 @@ async def search(request: Request):
         "search_results.html", {"request": request, "results": annotated_results}
     )
 
+
 @app.get("/upload", response_class=HTMLResponse)
 async def upload(request: Request, tmdb_id: int, media_type: str):
     try:
@@ -366,7 +392,7 @@ async def upload(request: Request, tmdb_id: int, media_type: str):
             # Step 1: Get latest timestamp before upload
             cur.execute(
                 "SELECT MAX(timestamp) FROM update_logs WHERE movie_id = %s;",
-                (tmdb_id,)
+                (tmdb_id,),
             )
             previous_max = cur.fetchone()[0] or datetime.min
 
@@ -374,12 +400,16 @@ async def upload(request: Request, tmdb_id: int, media_type: str):
         if media_type == "movie":
             movie_data = get_movie_data(tmdb_id)
             insert_or_update_movie_data(conn, movie_data)
-            base_message = f"✅ Movie '{movie_data.get('title')}' processed successfully."
+            base_message = (
+                f"✅ Movie '{movie_data.get('title')}' processed successfully."
+            )
             movie_id = movie_data["id"]
         elif media_type == "tv":
             series_data = fetch_series(tmdb_id)
             insert_or_update_series_data(conn, series_data, TMDB_API_KEY)
-            base_message = f"✅ TV Series '{series_data.get('name')}' processed successfully."
+            base_message = (
+                f"✅ TV Series '{series_data.get('name')}' processed successfully."
+            )
             movie_id = series_data["id"]
         else:
             base_message = "❌ Invalid media type selected."
@@ -402,26 +432,34 @@ async def upload(request: Request, tmdb_id: int, media_type: str):
 
             for log in logs:
                 timestamp, change_type, field, old, new = log
-                changes.append({
-                    "timestamp": timestamp,
-                    "change_type": change_type,
-                    "field": field,
-                    "old_value": old,
-                    "new_value": new,
-                })
+                changes.append(
+                    {
+                        "timestamp": timestamp,
+                        "change_type": change_type,
+                        "field": field,
+                        "old_value": old,
+                        "new_value": new,
+                    }
+                )
 
         filtered_changes = filter_changes(changes)
         conn.close()
 
-        message = base_message if filtered_changes else f"{base_message} No changes needed — already up-to-date."
+        message = (
+            base_message
+            if filtered_changes
+            else f"{base_message} No changes needed — already up-to-date."
+        )
 
     except Exception as e:
         message = f"❌ Error occurred: {str(e)}"
         filtered_changes = []
 
     return templates.TemplateResponse(
-        "result.html", {"request": request, "message": message, "changes": filtered_changes}
+        "result.html",
+        {"request": request, "message": message, "changes": filtered_changes},
     )
+
 
 def classify_freshness(lastupdated):
     if not lastupdated:
@@ -437,6 +475,7 @@ def classify_freshness(lastupdated):
     else:
         return "stale"
 
+
 def filter_changes(raw_changes):
     """
     Filters out changes where old_value == new_value or both are empty.
@@ -447,7 +486,9 @@ def filter_changes(raw_changes):
         old = change.get("old_value")
         new = change.get("new_value")
 
-        if (old is None and new is None) or (str(old).strip() == "" and str(new).strip() == ""):
+        if (old is None and new is None) or (
+            str(old).strip() == "" and str(new).strip() == ""
+        ):
             continue
         if str(old) == str(new):
             continue
@@ -459,6 +500,7 @@ def filter_changes(raw_changes):
         filtered.append(change)
 
     return filtered
+
 
 def search_tmdb_combined(name):
     endpoints = ["movie", "tv"]
@@ -477,6 +519,7 @@ def search_tmdb_combined(name):
     combined_results.sort(key=lambda x: x.get("popularity", 0), reverse=True)
     return combined_results
 
+
 def search_person_tmdb(name):
     url = "https://api.themoviedb.org/3/search/person"
     params = {"api_key": TMDB_API_KEY, "query": name}
@@ -493,7 +536,9 @@ def search_person_tmdb(name):
 
                 # Fetch detailed info
                 detail_url = f"https://api.themoviedb.org/3/person/{person_id}"
-                detail_response = requests.get(detail_url, params={"api_key": TMDB_API_KEY})
+                detail_response = requests.get(
+                    detail_url, params={"api_key": TMDB_API_KEY}
+                )
                 if detail_response.status_code == 200:
                     details = detail_response.json()
                     person["biography"] = details.get("biography")
@@ -502,20 +547,32 @@ def search_person_tmdb(name):
                     person["also_known_as"] = details.get("also_known_as")
 
                 # Fetch credits
-                credits_url = f"https://api.themoviedb.org/3/person/{person_id}/combined_credits"
-                credits_response = requests.get(credits_url, params={"api_key": TMDB_API_KEY})
+                credits_url = (
+                    f"https://api.themoviedb.org/3/person/{person_id}/combined_credits"
+                )
+                credits_response = requests.get(
+                    credits_url, params={"api_key": TMDB_API_KEY}
+                )
                 if credits_response.status_code == 200:
                     credits = credits_response.json().get("cast", [])
                     for credit in credits:
                         tmdb_id = credit.get("id")
                         media_type = credit.get("media_type")
-                        date_str = credit.get("release_date") if media_type == "movie" else credit.get("first_air_date")
+                        date_str = (
+                            credit.get("release_date")
+                            if media_type == "movie"
+                            else credit.get("first_air_date")
+                        )
 
                         # Check existence in DB
                         if media_type == "movie":
-                            cur.execute("SELECT 1 FROM movies WHERE id = %s;", (tmdb_id,))
+                            cur.execute(
+                                "SELECT 1 FROM movies WHERE id = %s;", (tmdb_id,)
+                            )
                         elif media_type == "tv":
-                            cur.execute("SELECT 1 FROM series WHERE series_id = %s;", (tmdb_id,))
+                            cur.execute(
+                                "SELECT 1 FROM series WHERE series_id = %s;", (tmdb_id,)
+                            )
                         else:
                             credit["exists"] = False
                             credit["sort_date"] = None
@@ -525,12 +582,18 @@ def search_person_tmdb(name):
 
                         # Parse date for sorting
                         try:
-                            credit["sort_date"] = datetime.strptime(date_str, "%Y-%m-%d") if date_str else None
+                            credit["sort_date"] = (
+                                datetime.strptime(date_str, "%Y-%m-%d")
+                                if date_str
+                                else None
+                            )
                         except Exception:
                             credit["sort_date"] = None
 
                     # Sort credits in descending order
-                    credits.sort(key=lambda x: x.get("sort_date") or datetime.min, reverse=True)
+                    credits.sort(
+                        key=lambda x: x.get("sort_date") or datetime.min, reverse=True
+                    )
                     person["credits"] = credits
     finally:
         conn.close()
