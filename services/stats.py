@@ -1,3 +1,4 @@
+import psycopg2.extras
 from pathlib import Path
 from sqlalchemy import text
 from db.connection import get_connection
@@ -9,8 +10,10 @@ def load_query(name: str) -> str:
 
 def fetch_stat(query_name: str):
     query = load_query(query_name)
-    with get_connection() as db:
-        return db.execute(text(query)).fetchall()
+    db = get_connection()
+    with db.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()
 
 # Individual stat loaders
 def get_top_rated_movies():

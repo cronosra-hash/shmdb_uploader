@@ -7,61 +7,27 @@ from datetime import datetime, timedelta
 import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, APIRouter
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 # ─── Internal Project Imports ────────────────────────────────────────────────
 from config.settings import TMDB_API_KEY
 from db.connection import get_connection
-
-# Uploader modules
 from uploader.movie_uploader import insert_or_update_movie_data
 from uploader.tv_uploader import insert_or_update_series_data
-
-# TMDB API modules
 from tmdb.movie_api import get_movie_data
 from tmdb.tv_api import fetch_series
-
-# ─── Standard Library Imports ────────────────────────────────────────────────
-import os
-import sys
-from datetime import datetime, timedelta
-
-# ─── Third-Party Imports ─────────────────────────────────────────────────────
-import requests
-from dotenv import load_dotenv
-from fastapi import FastAPI, Request, APIRouter
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-
-# ─── Internal Project Imports ────────────────────────────────────────────────
-from config.settings import TMDB_API_KEY
-from db.connection import get_connection
-
-# Uploader modules
-from uploader.movie_uploader import insert_or_update_movie_data
-from uploader.tv_uploader import insert_or_update_series_data
-
-# TMDB API modules
-from tmdb.movie_api import get_movie_data
-from tmdb.tv_api import fetch_series
-
-# Services
 from services import stats
+from services.freshness import get_freshness_summary  # or wherever you define it
 
 # ─── Environment Setup ───────────────────────────────────────────────────────
-# Add project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-# Load environment variables
 load_dotenv()
 
 # ─── FastAPI App Initialization ──────────────────────────────────────────────
 app = FastAPI()
-
-# Static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="web_ui/templates")
 
@@ -70,44 +36,43 @@ router = APIRouter()
 
 @router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {
+    return templates.TemplateResponse("index.html", get_stats_context(request))
+
+@router.get("/uploader", response_class=HTMLResponse, name="uploader")
+async def uploader(request: Request):
+    return templates.TemplateResponse("uploader.html", get_stats_context(request))
+
+def get_stats_context(request: Request):
+    return {
         "request": request,
-        "active_release_years": stats.get_active_release_years(),
-        "hidden_gems": stats.get_hidden_gems(),
-        "most_reviewed_titles": stats.get_most_reviewed_titles(),
-        "popular_genres": stats.get_popular_genres(),
-        "prolific_actors": stats.get_prolific_actors(),
-        "top_rated_actors": stats.get_top_rated_actors(),
-        "top_rated_movies": stats.get_top_rated_movies(),
-        "trending_titles": stats.get_trending_titles(),
-    })
+        "stats": {
+            "active_release_years": stats.get_active_release_years(),
+            "hidden_gems": stats.get_hidden_gems(),
+            "most_reviewed_titles": stats.get_most_reviewed_titles(),
+            "popular_genres": stats.get_popular_genres(),
+            "prolific_actors": stats.get_prolific_actors(),
+            "top_rated_actors": stats.get_top_rated_actors(),
+            "top_rated_movies": stats.get_top_rated_movies(),
+            "trending_titles": stats.get_trending_titles(),
+            "freshness": get_freshness_summary(),
+        }
+    }
 
 # ─── Register Router ─────────────────────────────────────────────────────────
 app.include_router(router)
 
+# ─── Utility Functions ───────────────────────────────────────────────────────
 def classify_freshness(lastupdated):
     if not lastupdated:
-        return "stale"  # treat missing as stale
-
+        return "stale"
     now = datetime.utcnow()
     delta = now - lastupdated
-
     if delta <= timedelta(days=7):
         return "fresh"
     elif delta <= timedelta(days=30):
         return "moderate"
     else:
         return "stale"
-
-# Add project root to sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-# Load environment variables
-load_dotenv()
-
-app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="web_ui/templates")
 
 @app.post("/search_person", response_class=HTMLResponse)
 async def search_person(request: Request):

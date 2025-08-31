@@ -1,18 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}TMDB Uploader{% endblock %}
-{% block header %}SHMDB Uploader{% endblock %}
-{% block subheader %}<h2>Upload Movie or TV Series</h2>{% endblock %}
+{% block title %}SHMDB Dashboard{% endblock %}
+{% block header %}Welcome to SHMDB{% endblock %}
+{% block subheader %}<h2>Choose an Action</h2>{% endblock %}
 
 {% block content %}
-
 <div class="page-wrapper">
-  {% include "partials/_search_form.html" %}
-
-  <!-- Add spacing here -->
-  <div style="margin-top: 2em;"></div>
-
-  {% include "partials/_stats_panel.html" %}
+  <a href="{{ url_for('uploader') }}" class="btn btn-primary">Go to Uploader</a>
 </div>
 
 <div class="grid-container">
@@ -25,6 +19,5 @@
   {% include "partials/stats/_top_rated_movies.html" %}
   {% include "partials/stats/_trending_titles.html" %}
 </div>
-
 
 {% endblock %}
