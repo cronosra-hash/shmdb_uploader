@@ -1,8 +1,10 @@
 <div class="card fadeInUp">
   <h4 class="text-neon-cyan">🔥 Trending Titles</h4>
-  <ul>
+  <ul class="grid grid-cols-2 gap-2 text-sm text-neon-pink">
     {% for title in trending_titles %}
-      <li>{{ title.title_name }} — 🕒 <span class="timestamp">{{ title.updated_at.strftime('%Y-%m-%d') }}</span></li>
+    <li>
+      {{ title.title }} — 🕒 <span class="timestamp">{{ title.lastupdated.strftime('%d-%m-%Y') }}</span>
+    </li>
     {% endfor %}
   </ul>
 </div>

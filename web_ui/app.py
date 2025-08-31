@@ -304,6 +304,22 @@ async def read_root(request: Request):
                 for row in cur.fetchall()
             ]
 
+            # trending titles
+            cur.execute("""
+                SELECT id, title, lastupdated
+                FROM movies
+                WHERE lastupdated > NOW() - INTERVAL '7 days'
+                ORDER BY lastupdated DESC
+                LIMIT 10;
+            """)
+            trending_titles = [
+                {
+                    "id": row[0],
+                    "title": row[1],
+                    "lastupdated": row[2]
+                }
+                for row in cur.fetchall()
+            ]
 
     finally:
         conn.close()
@@ -320,7 +336,8 @@ async def read_root(request: Request):
         "popular_genres": popular_genres,
         "prolific_actors": prolific_actors,
         "top_rated_actors": top_rated_actors,
-        "top_rated_movies": top_rated_movies
+        "top_rated_movies": top_rated_movies,
+        "trending_titles": trending_titles
 
     })
 
