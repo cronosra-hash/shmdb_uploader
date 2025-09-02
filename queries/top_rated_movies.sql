@@ -1,5 +1,5 @@
 -- sql/top_rated_movies.sql
-SELECT id, title, vote_average
+SELECT movie_id, movie_title, vote_average
 FROM movies
 WHERE vote_average IS NOT NULL
 ORDER BY vote_average DESC

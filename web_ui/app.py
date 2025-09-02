@@ -52,7 +52,7 @@ async def title_detail(request: Request, title_id: int):
         "title_detail.html",
         {
             "request": request,
-            "title": title,
+            "movie_title": title,
             "cast": cast,
             "diagnostics": diagnostics,
             # "reviews": reviews
@@ -128,20 +128,20 @@ async def read_root(request: Request):
             cur.execute("SELECT COUNT(*) FROM series;")
             stats["series_count"] = cur.fetchone()[0]
 
-            # Last update timestamp
-            cur.execute("SELECT MAX(timestamp) FROM update_logs;")
+            # Last update logged_at
+            cur.execute("SELECT MAX(logged_at) FROM update_logs;")
             stats["last_update"] = cur.fetchone()[0]
 
             # Recent updates
             cur.execute(
-                "SELECT COUNT(*) FROM update_logs WHERE timestamp >= %s;",
+                "SELECT COUNT(*) FROM update_logs WHERE logged_at >= %s;",
                 (datetime.utcnow() - timedelta(days=7),),
             )
             stats["recent_updates"] = cur.fetchone()[0]
 
             # Freshness breakdown
             cur.execute(
-                "SELECT lastupdated FROM movies UNION ALL SELECT lastupdated FROM series;"
+                "SELECT last_updated FROM movies UNION ALL SELECT last_updated FROM series;"
             )
             freshness_counts = {"fresh": 0, "moderate": 0, "stale": 0}
             for row in cur.fetchall():
@@ -161,9 +161,9 @@ async def read_root(request: Request):
 
             # Most changed fields
             cur.execute("""
-                SELECT field_name, COUNT(*) AS freq
+                SELECT updated_field, COUNT(*) AS freq
                 FROM update_logs
-                GROUP BY field_name
+                GROUP BY updated_field 
                 ORDER BY freq DESC
                 LIMIT 5;
             """)
@@ -193,10 +193,10 @@ async def read_root(request: Request):
 
             # Active release years
             cur.execute("""
-                SELECT mad.release_year, COUNT(*) AS title_count
+                SELECT mmd.release_year, COUNT(*) AS title_count
                 FROM movies m
-                JOIN movie_additional_details mad ON mad.movie_id = m.id
-                GROUP BY mad.release_year
+                JOIN movie_metadata mmd ON mmd.movie_id = m.movie_id
+                GROUP BY mmd.release_year
                 ORDER BY title_count DESC
                 LIMIT 10;
             """)
@@ -204,7 +204,7 @@ async def read_root(request: Request):
 
             # Hidden gems
             cur.execute("""
-                SELECT id, title, vote_average, vote_count
+                SELECT movie_id, movie_title, vote_average, vote_count
                 FROM movies
                 WHERE vote_average >= 7.0 AND vote_count > 100 AND vote_count < 1000
                 ORDER BY vote_average DESC
@@ -212,8 +212,8 @@ async def read_root(request: Request):
             """)
             hidden_gems = [
                 {
-                    "id": row[0],
-                    "title": row[1],
+                    "movie_id": row[0],
+                    "movie_title": row[1],
                     "vote_average": row[2],
                     "vote_count": row[3],
                 }
@@ -222,35 +222,35 @@ async def read_root(request: Request):
 
             # Most reviewed titles
             cur.execute("""
-                SELECT id, title, vote_count
+                SELECT movie_id, movie_title, vote_count
                 FROM movies
                 WHERE vote_count IS NOT NULL
                 ORDER BY vote_count DESC
                 LIMIT 10;
             """)
             most_reviewed_titles = [
-                {"id": row[0], "title": row[1], "vote_count": row[2]}
+                {"movie_id": row[0], "movie_title": row[1], "vote_count": row[2]}
                 for row in cur.fetchall()
             ]
 
             # Popular genres
             cur.execute("""
-                SELECT g.name AS genre, COUNT(*) AS genre_count
+                SELECT g.genre_name AS genre, COUNT(*) AS genre_count
                 FROM genres g
-                JOIN movie_genres mg ON mg.genre_id = g.id
-                GROUP BY g.name
+                JOIN movie_genres mg ON mg.genre_id = g.genre_id
+                GROUP BY g.genre_name
                 ORDER BY genre_count DESC
                 LIMIT 10;
             """)
             popular_genres = [
-                {"genre": row[0], "genre_count": row[1]} for row in cur.fetchall()
+                {"genre_name": row[0], "genre_count": row[1]} for row in cur.fetchall()
             ]
 
             # Prolific actors
             cur.execute("""
                 SELECT p.name AS actor_name, COUNT(*) AS appearances
-                FROM moviecast mc
-                JOIN people p ON mc.person_id = p.person_id
+                FROM movie_cast mc
+                JOIN people p ON mc.actor_id = p.person_id
                 GROUP BY p.name
                 ORDER BY appearances DESC
                 LIMIT 10;
@@ -264,9 +264,9 @@ async def read_root(request: Request):
                 SELECT p.name AS actor_name,
                     ROUND(AVG(m.vote_average)::numeric, 2) AS avg_rating,
                     COUNT(*) AS title_count
-                FROM moviecast mc
-                JOIN people p ON mc.person_id = p.person_id
-                JOIN movies m ON mc.movie_id = m.id
+                FROM movie_cast mc
+                JOIN people p ON mc.actor_id = p.person_id
+                JOIN movies m ON mc.movie_id = m.movie_id
                 WHERE m.vote_average IS NOT NULL
                 GROUP BY p.name
                 HAVING COUNT(*) > 5
@@ -280,27 +280,27 @@ async def read_root(request: Request):
 
             # top rated movies
             cur.execute("""
-                SELECT id, title, vote_average
+                SELECT movie_id, movie_title, vote_average
                 FROM movies
                 WHERE vote_average IS NOT NULL
                 ORDER BY vote_average DESC
                 LIMIT 10;
             """)
             top_rated_movies = [
-                {"id": row[0], "title": row[1], "vote_average": row[2]}
+                {"id": row[0], "movie_title": row[1], "vote_average": row[2]}
                 for row in cur.fetchall()
             ]
 
             # trending titles
             cur.execute("""
-                SELECT id, title, lastupdated
+                SELECT movie_id, movie_title, last_updated
                 FROM movies
-                WHERE lastupdated > NOW() - INTERVAL '7 days'
-                ORDER BY lastupdated DESC
+                WHERE last_updated > NOW() - INTERVAL '7 days'
+                ORDER BY last_updated DESC
                 LIMIT 10;
             """)
             trending_titles = [
-                {"id": row[0], "title": row[1], "lastupdated": row[2]}
+                {"movie_id": row[0], "movie_title": row[1], "last_updated": row[2]}
                 for row in cur.fetchall()
             ]
 
@@ -340,125 +340,150 @@ async def search(request: Request):
         )
 
     results = search_tmdb_combined(name)
-
-    conn = get_connection()
-    annotated_results = []
-    try:
-        with conn.cursor() as cur:
-            for result in results:
-                tmdb_id = result.get("id")
-                media_type = result.get("media_type")
-
-                try:
-                    if media_type == "movie":
-                        cur.execute(
-                            "SELECT lastupdated FROM movies WHERE id = %s;", (tmdb_id,)
-                        )
-                    elif media_type == "tv":
-                        cur.execute(
-                            "SELECT lastupdated FROM series WHERE series_id = %s;",
-                            (tmdb_id,),
-                        )
-                    else:
-                        result["exists"] = False
-                        result["lastupdated"] = None
-                        annotated_results.append(result)
-                        continue
-
-                    row = cur.fetchone()
-                    result["exists"] = bool(row)
-                    result["lastupdated"] = row[0] if row else None
-                    result["freshness"] = classify_freshness(result["lastupdated"])
-
-                except Exception as e:
-                    print(f"❌ DB check failed for {media_type} ID {tmdb_id}: {e}")
-                    result["exists"] = False
-                    result["lastupdated"] = None
-
-                annotated_results.append(result)
-    finally:
-        conn.close()
+    annotated_results = annotate_results_with_db_status(results)
 
     return templates.TemplateResponse(
         "search_results.html", {"request": request, "results": annotated_results}
     )
 
 
-@app.get("/upload", response_class=HTMLResponse)
-async def upload(request: Request, tmdb_id: int, media_type: str):
+def annotate_results_with_db_status(results):
+    conn = get_connection()
+    annotated = []
+
     try:
-        conn = get_connection()
         with conn.cursor() as cur:
-            # Step 1: Get latest timestamp before upload
-            cur.execute(
-                "SELECT MAX(timestamp) FROM update_logs WHERE movie_id = %s;",
-                (tmdb_id,),
-            )
-            previous_max = cur.fetchone()[0] or datetime.min
-
-        # Step 2: Perform upload
-        if media_type == "movie":
-            movie_data = get_movie_data(tmdb_id)
-            insert_or_update_movie_data(conn, movie_data)
-            base_message = (
-                f"✅ Movie '{movie_data.get('title')}' processed successfully."
-            )
-            movie_id = movie_data["id"]
-        elif media_type == "tv":
-            series_data = fetch_series(tmdb_id)
-            insert_or_update_series_data(conn, series_data, TMDB_API_KEY)
-            base_message = (
-                f"✅ TV Series '{series_data.get('name')}' processed successfully."
-            )
-            movie_id = series_data["id"]
-        else:
-            base_message = "❌ Invalid media type selected."
-            movie_id = None
-
-        # Step 3: Fetch only new logs
-        changes = []
-        if movie_id:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    SELECT timestamp, change_type, field_name, old_value, new_value
-                    FROM update_logs
-                    WHERE movie_id = %s AND timestamp > %s
-                    ORDER BY timestamp DESC;
-                    """,
-                    (movie_id, previous_max),
-                )
-                logs = cur.fetchall()
-
-            for log in logs:
-                timestamp, change_type, field, old, new = log
-                changes.append(
-                    {
-                        "timestamp": timestamp,
-                        "change_type": change_type,
-                        "field": field,
-                        "old_value": old,
-                        "new_value": new,
-                    }
-                )
-
-        filtered_changes = filter_changes(changes)
+            for result in results:
+                annotated.append(annotate_result(cur, result))
+    finally:
         conn.close()
 
-        message = (
-            base_message
-            if filtered_changes
-            else f"{base_message} No changes needed — already up-to-date."
-        )
+    return annotated
+
+
+def annotate_result(cur, result):
+    tmdb_id = result.get("id")
+    media_type = result.get("media_type")
+
+    try:
+        if media_type == "movie":
+            cur.execute(
+                "SELECT last_updated FROM movies WHERE movie_id = %s;", (tmdb_id,)
+            )
+        elif media_type == "tv":
+            cur.execute(
+                "SELECT last_updated FROM series WHERE series_id = %s;", (tmdb_id,)
+            )
+        else:
+            return {**result, "exists": False, "last_updated": None}
+
+        row = cur.fetchone()
+        last_updated = row[0] if row else None
+
+        return {
+            **result,
+            "exists": bool(row),
+            "last_updated": last_updated,
+            "freshness": classify_freshness(last_updated),
+        }
+
+    except Exception as e:
+        print(f"❌ DB check failed for {media_type} ID {tmdb_id}: {e}")
+        return {**result, "exists": False, "last_updated": None}
+
+
+@app.get("/upload", response_class=HTMLResponse)
+async def upload(request: Request, tmdb_id: int, media_type: str):
+    conn = None
+    filtered_changes = []
+    message = ""
+
+    try:
+        conn = get_connection()
+        previous_max = get_previous_log_timestamp(conn, tmdb_id)
+
+        movie_id, base_message = process_media_upload(conn, tmdb_id, media_type)
+
+        if movie_id:
+            changes = fetch_new_update_logs(conn, movie_id, previous_max)
+            filtered_changes = filter_changes(changes)
+            message = (
+                base_message
+                if filtered_changes
+                else f"{base_message} No changes needed — already up-to-date."
+            )
+        else:
+            message = f"{base_message} No movie ID returned — upload may have failed."
 
     except Exception as e:
         message = f"❌ Error occurred: {str(e)}"
-        filtered_changes = []
+
+    finally:
+        if conn:
+            conn.close()
+
+    print("🧪 Filtered changes:", filtered_changes)
 
     return templates.TemplateResponse(
         "result.html",
-        {"request": request, "message": message, "changes": filtered_changes},
+        {
+            "request": request,
+            "message": message,
+            "changes": filtered_changes,
+        },
     )
+
+
+def get_previous_log_timestamp(conn, movie_id):
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT MAX(logged_at) FROM update_logs WHERE movie_id = %s;",
+            (movie_id,),
+        )
+        return cur.fetchone()[0] or datetime.min
+
+
+def process_media_upload(conn, tmdb_id, media_type):
+    if media_type == "movie":
+        movie_data = get_movie_data(tmdb_id)
+        insert_or_update_movie_data(conn, movie_data)
+        return movie_data[
+            "id"
+        ], f"✅ Movie '{movie_data.get('title')}' processed successfully."
+
+    elif media_type == "tv":
+        series_data = fetch_series(tmdb_id)
+        insert_or_update_series_data(conn, series_data, TMDB_API_KEY)
+        return series_data[
+            "id"
+        ], f"✅ TV Series '{series_data.get('name')}' processed successfully."
+
+    return None, "❌ Invalid media type selected."
+
+
+def fetch_new_update_logs(conn, movie_id, since):
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT logged_at, update_type, updated_field, previous_value, current_value
+            FROM update_logs
+            WHERE movie_id = %s AND logged_at > %s
+            ORDER BY logged_at DESC;
+        """,
+            (movie_id, since),
+        )
+        logs = cur.fetchall()
+
+    return [
+        {
+            "logged_at": log[0],
+            "update_type": log[1],
+            "updated_field": log[2],
+            "previous_value": log[3],
+            "current_value": log[4],
+        }
+        for log in logs
+    ]
 
 
 def classify_freshness(lastupdated):
@@ -478,13 +503,13 @@ def classify_freshness(lastupdated):
 
 def filter_changes(raw_changes):
     """
-    Filters out changes where old_value == new_value or both are empty.
-    Formats timestamps for display.
+    Filters out changes where previous_value == current_value or both are empty.
+    Formats logged_at for display.
     """
     filtered = []
     for change in raw_changes:
-        old = change.get("old_value")
-        new = change.get("new_value")
+        old = change.get("previous_value")
+        new = change.get("current_value")
 
         if (old is None and new is None) or (
             str(old).strip() == "" and str(new).strip() == ""
@@ -493,9 +518,9 @@ def filter_changes(raw_changes):
         if str(old) == str(new):
             continue
 
-        ts = change.get("timestamp")
+        ts = change.get("logged_at")
         if isinstance(ts, datetime):
-            change["timestamp"] = ts.strftime("%Y-%m-%d %H:%M:%S")
+            change["logged_at"] = ts.strftime("%Y-%m-%d %H:%M:%S")
 
         filtered.append(change)
 
@@ -567,7 +592,7 @@ def search_person_tmdb(name):
                         # Check existence in DB
                         if media_type == "movie":
                             cur.execute(
-                                "SELECT 1 FROM movies WHERE id = %s;", (tmdb_id,)
+                                "SELECT 1 FROM movies WHERE movie_id = %s;", (tmdb_id,)
                             )
                         elif media_type == "tv":
                             cur.execute(

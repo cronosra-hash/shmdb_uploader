@@ -1,7 +1,7 @@
 -- sql/trending_titles.sql
-SELECT id, title, lastupdated
+SELECT movie_id, movie_title, last_updated
 FROM movies
-WHERE lastupdated > NOW() - INTERVAL '7 days'
-ORDER BY lastupdated DESC
+WHERE last_updated > NOW() - INTERVAL '7 days'
+ORDER BY last_updated DESC
 LIMIT 10;
 -- This query retrieves the 10 most recently updated movie titles from the past week.

@@ -3,7 +3,7 @@
   <ul class="grid grid-cols-2 gap-2 text-sm text-neon-pink">
     {% for movie in stats.top_rated_movies %}
     <li>
-      {{ movie.title }} — ⭐ {{ movie.vote_average }}
+      {{ movie.movie_title }} — ⭐ {{ movie.vote_average }}
     </li>
     {% endfor %}
   </ul>

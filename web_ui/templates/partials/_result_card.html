@@ -8,8 +8,8 @@
         {% if result.release_date or result.first_air_date %} ({{ (result.release_date or result.first_air_date)[:4] }}) {% endif %}
     </div>
     {% include "partials/_badge.html" %}
-    {% if result.lastupdated %}
-    <div class="timestamp">Last updated: {{ result.lastupdated.strftime('%Y-%m-%d %H:%M') }}</div>
+    {% if result.last_updated %}
+    <div class="timestamp">Last updated: {{ result.last_updated.strftime('%Y-%m-%d %H:%M') }}</div>
     {% endif %}
     {% include "partials/_action_form.html" %}
 </div>

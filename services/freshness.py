@@ -2,11 +2,11 @@ from db.connection import get_connection
 from datetime import datetime, timedelta
 import psycopg2.extras
 
-def classify_freshness(lastupdated):
-    if not lastupdated:
+def classify_freshness(last_updated):
+    if not last_updated:
         return "stale"
     now = datetime.utcnow()
-    delta = now - lastupdated
+    delta = now - last_updated
     if delta <= timedelta(days=7):
         return "fresh"
     elif delta <= timedelta(days=30):
@@ -16,7 +16,7 @@ def classify_freshness(lastupdated):
 
 def get_freshness_summary():
     query = """
-        SELECT lastupdated FROM movies WHERE lastupdated IS NOT NULL;
+        SELECT last_updated FROM movies WHERE last_updated IS NOT NULL;
     """
     db = get_connection()
     with db.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
@@ -25,7 +25,7 @@ def get_freshness_summary():
 
     summary = {"fresh": 0, "moderate": 0, "stale": 0}
     for row in rows:
-        category = classify_freshness(row["lastupdated"])
+        category = classify_freshness(row["last_updated"])
         summary[category] += 1
 
     return summary

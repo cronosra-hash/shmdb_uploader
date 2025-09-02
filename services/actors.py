@@ -5,12 +5,12 @@ import psycopg2.extras
 def get_cast_for_title(title_id: int):
     query = """
     SELECT
-        mc.person_id AS actor_id,
+        mc.actor_id,
         p.name,
         p.profile_path,
         mc.character_name
-    FROM moviecast mc
-    JOIN people p ON p.person_id = mc.person_id
+    FROM movie_cast mc
+    JOIN people p ON p.person_id = mc.actor_id
     WHERE mc.movie_id = %s
     ORDER BY mc.cast_order ASC
     """

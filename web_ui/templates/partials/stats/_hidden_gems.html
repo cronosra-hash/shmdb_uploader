@@ -3,7 +3,7 @@
   <ul class="grid grid-cols-2 gap-2 text-sm text-neon-pink">
     {% for gem in stats.hidden_gems %}
     <li class="flex justify-between">
-      <span>{{ gem.title }}</span>
+      <span>{{ gem.movie_title }}</span>
       <span class="score">⭐ {{ gem.vote_average }}</span>
       <span class="votes">({{ gem.vote_count }} votes)</span>
     </li>

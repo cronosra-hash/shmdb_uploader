@@ -1,5 +1,5 @@
 -- sql/most_reviewed_titles.sql
-SELECT id, title, vote_count
+SELECT movie_id, movie_title, vote_count
 FROM movies
 WHERE vote_count IS NOT NULL
 ORDER BY vote_count DESC
