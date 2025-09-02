@@ -23,6 +23,7 @@ from services import stats
 from services.freshness import get_freshness_summary  # or wherever you define it
 from services.titles import get_title_by_id
 from services.diagnostics import wrap_query
+from web_ui.filters import datetimeformat, ago, to_timezone, timestamp_color
 
 # from services.reviews import get_reviews_for_title
 from services.actors import get_cast_for_title
@@ -35,6 +36,10 @@ load_dotenv()
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="web_ui/templates")
+templates.env.filters["datetimeformat"] = datetimeformat
+templates.env.filters["ago"] = ago
+templates.env.filters["to_timezone"] = to_timezone
+templates.env.filters["timestamp_color"] = timestamp_color
 
 # ─── Router Setup ────────────────────────────────────────────────────────────
 router = APIRouter()

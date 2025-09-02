@@ -24,7 +24,7 @@
     <tbody>
       {% for change in changes %}
         <tr style="--row-index: {{ loop.index0 }}">
-          <td>{{ change["logged_at"] }}</td>
+          <td>{{ change["logged_at"] | datetimeformat }}</td>
           <td>
             <span class="update-type tooltip" data-tooltip="{{ change['update_type_detail'] }}">
               {{ change["update_type"] }}
