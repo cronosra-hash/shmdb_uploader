@@ -23,10 +23,18 @@
     </thead>
     <tbody>
       {% for change in changes %}
-        <tr>
+        <tr style="--row-index: {{ loop.index0 }}">
           <td>{{ change["logged_at"] }}</td>
-          <td>{{ change["update_type"] }}</td>
-          <td>{{ change["updated_field"] }}</td>
+          <td>
+            <span class="update-type tooltip" data-tooltip="{{ change['update_type_detail'] }}">
+              {{ change["update_type"] }}
+            </span>
+          </td>
+          <td>
+            <span class="tooltip" data-tooltip="{{ change['diagnostic'] }}">
+              {{ change["updated_field"] }}
+            </span>
+          </td>
           <td>{{ change["previous_value"] }}</td>
           <td>{{ change["current_value"] }}</td>
         </tr>
