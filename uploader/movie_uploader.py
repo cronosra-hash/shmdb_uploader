@@ -20,11 +20,11 @@ def update_movie_data(conn, movie, media_type, verbose=False):
             return
 
         column_names = [desc[0] for desc in cur.description]
-        fields, new_data = extract_movie_fields(movie)
+        fields_dict = extract_movie_fields(movie)
 
         # Compare using schema-aware logic
         updates, values, changed_fields = compare_fields(
-            existing_row, column_names, fields, new_data, verbose=verbose
+            existing_row, column_names, fields_dict, verbose=verbose
         )
 
         if updates:
@@ -53,15 +53,15 @@ def update_movie_data(conn, movie, media_type, verbose=False):
             else:
                 print(f"✅ No changes for movie: {movie['title']}")
 
-    return fields, new_data
+    return fields_dict
 
 
-def compare_fields(existing_row, column_names, fields, new_data, verbose=False):
+def compare_fields(existing_row, column_names, fields, verbose=False):
     updates = []
     values = []
     changed_fields = []
 
-    for field in fields:
+    for field, new in fields.items():
         if field not in column_names:
             if verbose:
                 print(f"⚠️ Skipping unknown field: {field}")
@@ -69,7 +69,6 @@ def compare_fields(existing_row, column_names, fields, new_data, verbose=False):
 
         idx = column_names.index(field)
         old = existing_row[idx]
-        new = new_data.get(field)
 
         # Normalize types
         if isinstance(old, (int, float)) and isinstance(new, str):
@@ -104,25 +103,22 @@ def compare_fields(existing_row, column_names, fields, new_data, verbose=False):
     return updates, values, changed_fields
 
 
-def insert_movie_data(conn, movie, verbose=False):
-    """
-    Inserts a new movie record into the database, including its collection (if any).
-    Uses safe SQL construction and logs insertion for auditing.
-    """
+def insert_movie_data(conn, movie, media_type, verbose=False):
     with conn.cursor() as cur:
-        # Ensure collection exists
-        # insert_collection_if_needed(cur, movie.get("belongs_to_collection"))
+        fields_dict = extract_movie_fields(movie)
+        fields_dict["last_updated"] = sql.SQL("NOW()")  # raw SQL expression
 
-        # Extract fields and values
-        fields, values = extract_movie_fields(movie)
-        fields.append("last_updated")
-        values.append("NOW()")  # We'll handle this as a raw SQL expression below
+        field_identifiers = []
+        value_placeholders = []
+        param_values = []
 
-        # Build SQL safely
-        field_identifiers = [sql.Identifier(f) for f in fields]
-        value_placeholders = [
-            sql.Placeholder() if v != "NOW()" else sql.SQL("NOW()") for v in values
-        ]
+        for field, value in fields_dict.items():
+            field_identifiers.append(sql.Identifier(field))
+            if isinstance(value, sql.SQL):
+                value_placeholders.append(value)
+            else:
+                value_placeholders.append(sql.Placeholder())
+                param_values.append(value)
 
         query = sql.SQL("""
             INSERT INTO movies ({fields})
@@ -133,14 +129,35 @@ def insert_movie_data(conn, movie, verbose=False):
             values=sql.SQL(", ").join(value_placeholders),
         )
 
-        # Filter out raw SQL expressions from values
-        param_values = [v for v in values if v != "NOW()"]
         cur.execute(query, param_values)
+        conn.commit()
 
-    conn.commit()
-    print(f"✅ Inserted movie: {movie['title']}")
-    if verbose:
-        print(f"Fields inserted: {fields}")
+        movie_id = movie.get("movie_id") or movie.get("id")
+        title = movie.get("title", "[unknown title]")
+
+        print(f"🆕 Inserting movie_id={movie_id} ({title})")
+        print(f"✅ Inserted fields: {list(fields_dict.keys())}")
+
+        null_fields = [k for k, v in fields_dict.items() if v is None]
+        if null_fields:
+            print(f"⚠️ Null fields: {null_fields}")
+
+        # Audit log each inserted field
+        for field, value in fields_dict.items():
+            if not isinstance(value, sql.SQL):  # skip raw SQL expressions
+                log_update(
+                    cur,
+                    movie_id,
+                    title,
+                    media_type,
+                    "field_inserted",
+                    field,
+                    None,
+                    value,
+                )
+
+    return fields_dict
+
 
 
 def insert_collection_if_needed(cur, collection):
@@ -163,25 +180,28 @@ def insert_collection_if_needed(cur, collection):
     )
 
 
-def extract_movie_fields(movie):
-    fields = []
-    new_data = {}
+def extract_movie_fields(data):
+    """
+    Extracts relevant fields from a movie dict for SQL insertion.
+    Returns a flat dict of field → value.
+    """
+    return {
+        "movie_id": data.get("id"),
+        "movie_title": data.get("title"),
+        "overview": data.get("overview"),
+        "popularity": data.get("popularity"),
+        "vote_average": data.get("vote_average"),
+        "vote_count": data.get("vote_count"),
+        "poster_path": data.get("poster_path"),
+        "backdrop_path": data.get("backdrop_path"),
+        "original_language": data.get("original_language"),
+        "release_date": data.get("release_date"),
+        "runtime": data.get("runtime"),
+        "status": data.get("status"),
+        "budget": data.get("budget"),
+        "revenue": data.get("revenue"),
+    }
 
-    for key, value in movie.items():
-        if isinstance(value, (str, int, float, bool, type(None))):
-            fields.append(key)
-            new_data[key] = value
-        # Optionally flatten nested dicts or skip lists
-        elif isinstance(value, dict):
-            for subkey, subval in value.items():
-                compound_key = f"{key}_{subkey}"
-                fields.append(compound_key)
-                new_data[compound_key] = subval
-        # Skip lists unless explicitly handled
-        elif isinstance(value, list):
-            continue
-
-    return fields, new_data
 
 
 def insert_or_update_movie_data(conn, movie, media_type):
