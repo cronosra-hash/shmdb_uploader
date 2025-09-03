@@ -5,7 +5,7 @@ from tmdb.movie_api import get_movie_data
 from psycopg2 import sql
 
 
-def update_movie_data(conn, movie, verbose=False):
+def update_movie_data(conn, movie, media_type, verbose=False):
     """
     Updates an existing movie record in the database if any fields have changed.
     Uses schema-aware comparison and logs each change for auditing.
@@ -44,6 +44,7 @@ def update_movie_data(conn, movie, verbose=False):
                     cur,
                     movie["movie_id"],
                     movie.get("movie_title") or movie.get("title"),
+                    media_type,  # ← this is your content_type
                     "field_updated",
                     field,
                     old,
@@ -56,43 +57,49 @@ def update_movie_data(conn, movie, verbose=False):
 
 
 def compare_fields(existing_row, column_names, fields, new_data, verbose=False):
-    updates, values, changed_fields = [], [], []
+    updates = []
+    values = []
+    changed_fields = []
 
-    # Map column names to their current values
-    existing_dict = dict(zip(column_names, existing_row))
+    for field in fields:
+        if field not in column_names:
+            if verbose:
+                print(f"⚠️ Skipping unknown field: {field}")
+            continue
 
-    for field, new_value in zip(fields, new_data):
-        old_value = existing_dict.get(field)
+        idx = column_names.index(field)
+        old = existing_row[idx]
+        new = new_data.get(field)
 
-        # Normalize release_date
-        if field == "release_date" and isinstance(new_value, str):
+        # Normalize types
+        if isinstance(old, (int, float)) and isinstance(new, str):
             try:
-                new_value = datetime.strptime(new_value.strip(), "%Y-%m-%d").date()
+                new = float(new) if '.' in new else int(new)
             except ValueError:
-                if verbose:
-                    print(f"⚠️ Skipping invalid release_date: {new_value}")
+                pass  # keep as string if coercion fails
+
+        # Skip if both are None or empty
+        if (old is None and new is None) or (
+            str(old).strip() == "" and str(new).strip() == ""
+        ):
+            continue
+
+        # Float comparison with tolerance
+        if isinstance(old, float) and isinstance(new, float):
+            if abs(old - new) < 0.0001:
                 continue
 
-        # Normalize strings
-        if isinstance(old_value, str) and isinstance(new_value, str):
-            old_value = old_value.strip()
-            new_value = new_value.strip()
+        # Skip if values are equal
+        if str(old) == str(new):
+            continue
 
-        # Attempt type coercion for comparison
-        if isinstance(old_value, (int, float)) and isinstance(new_value, str):
-            try:
-                new_value = type(old_value)(new_value)
-            except ValueError:
-                pass
+        # Field has changed
+        updates.append(f"{field} = %s")
+        values.append(new)
+        changed_fields.append((field, old, new))
 
-        # Detect change
-        if new_value != old_value:
-            updates.append(f"{field} = %s")
-            values.append(new_value)
-            changed_fields.append((field, old_value, new_value))
-
-            if verbose:
-                print(f"🔄 {field}: '{old_value}' → '{new_value}'")
+        if verbose:
+            print(f"🔄 Field changed: {field}: '{old}' ➡️ '{new}'")
 
     return updates, values, changed_fields
 
@@ -104,7 +111,7 @@ def insert_movie_data(conn, movie, verbose=False):
     """
     with conn.cursor() as cur:
         # Ensure collection exists
-        insert_collection_if_needed(cur, movie.get("belongs_to_collection"))
+        # insert_collection_if_needed(cur, movie.get("belongs_to_collection"))
 
         # Extract fields and values
         fields, values = extract_movie_fields(movie)
@@ -142,13 +149,13 @@ def insert_collection_if_needed(cur, collection):
 
     cur.execute(
         """
-        INSERT INTO collections (collection_id, collection_name, overview, poster_path, backdrop_path)
+        INSERT INTO collections (id, collection_name, overview, poster_path, backdrop_path)
         VALUES (%s, %s, %s, %s, %s)
-        ON CONFLICT (collection_id) DO NOTHING;
+        ON CONFLICT (id) DO NOTHING;
     """,
         (
             collection["id"],
-            collection["name"],
+            collection["collection_name"],
             collection.get("overview"),
             collection.get("poster_path"),
             collection.get("backdrop_path"),
@@ -157,37 +164,27 @@ def insert_collection_if_needed(cur, collection):
 
 
 def extract_movie_fields(movie):
-    collection = movie.get("belongs_to_collection")
-    collection_id = collection["id"] if collection else None
+    fields = []
+    new_data = {}
 
-    field_map = {
-        "movie_id": movie.get("movie_id") or movie.get("id"),
-        "movie_title": movie.get("movie_title") or movie.get("title"),
-        "original_title": movie.get("original_title"),
-        "overview": movie.get("overview"),
-        "release_date": movie.get("release_date"),
-        "runtime": movie.get("runtime"),
-        "popularity": movie.get("popularity"),
-        "vote_average": movie.get("vote_average"),
-        "vote_count": movie.get("vote_count"),
-        "poster_path": movie.get("poster_path"),
-        "backdrop_path": movie.get("backdrop_path"),
-        "original_language": movie.get("original_language"),
-        "status": movie.get("status"),
-        "budget": movie.get("budget"),
-        "revenue": movie.get("revenue"),
-        "homepage": movie.get("homepage"),
-        "imdb_id": movie.get("imdb_id"),
-        "collection_id": collection_id,
-    }
+    for key, value in movie.items():
+        if isinstance(value, (str, int, float, bool, type(None))):
+            fields.append(key)
+            new_data[key] = value
+        # Optionally flatten nested dicts or skip lists
+        elif isinstance(value, dict):
+            for subkey, subval in value.items():
+                compound_key = f"{key}_{subkey}"
+                fields.append(compound_key)
+                new_data[compound_key] = subval
+        # Skip lists unless explicitly handled
+        elif isinstance(value, list):
+            continue
 
-    fields = list(field_map.keys())
-    values = list(field_map.values())
-
-    return fields, values
+    return fields, new_data
 
 
-def insert_or_update_movie_data(conn, movie):
+def insert_or_update_movie_data(conn, movie, media_type):
     """
     Inserts or updates movie data in the database, including genres, production companies,
     spoken languages, production countries, cast, and crew.
@@ -207,10 +204,11 @@ def insert_or_update_movie_data(conn, movie):
 
         if exists:
             print(f"🔄 Updating movie_id={movie_id}")
-            update_movie_data(conn, movie)
+            update_movie_data(conn, movie, media_type)
+
         else:
             print(f"🆕 Inserting movie_id={movie_id}")
-            insert_movie_data(conn, movie)
+            insert_movie_data(conn, movie, media_type)
 
         with conn.cursor() as cur:
             insert_genres(cur, movie_id, movie)

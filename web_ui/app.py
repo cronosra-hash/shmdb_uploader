@@ -2,6 +2,7 @@
 import os
 import sys
 from datetime import datetime, timedelta
+from typing import Optional
 
 # ─── Third-Party Imports ─────────────────────────────────────────────────────
 import requests
@@ -402,16 +403,33 @@ async def upload(request: Request, tmdb_id: int, media_type: str):
     conn = None
     filtered_changes = []
     message = ""
+    title = ""
+    content_id = None
+    changes = []
 
     try:
         conn = get_connection()
-        previous_max = get_previous_log_timestamp(conn, tmdb_id)
+        previous_max = get_previous_log_timestamp(conn, tmdb_id, media_type)
+        if previous_max is None:
+            print("🧪 No previous log found — defaulting to datetime.min")
+            previous_max = datetime.min
 
-        movie_id, base_message = process_media_upload(conn, tmdb_id, media_type)
+        print("🧪 previous_max timestamp:", previous_max)
 
-        if movie_id:
-            changes = fetch_new_update_logs(conn, movie_id, previous_max)
+        content_id, base_message = process_media_upload(conn, tmdb_id, media_type)
+
+        if content_id:
+            print("🧪 Forcing log fetch...")
+            changes = fetch_new_update_logs(conn, content_id, media_type, previous_max)
+            print("🧪 Returned changes:", changes)
+            print("🧪 previous_max timestamp:", previous_max)
+
             filtered_changes = filter_changes(changes)
+
+            # Extract title from first change (if available)
+            if filtered_changes:
+                title = filtered_changes[0].get("title") or filtered_changes[0].get("movie_title", "")
+
             message = (
                 base_message
                 if filtered_changes
@@ -435,23 +453,31 @@ async def upload(request: Request, tmdb_id: int, media_type: str):
             "request": request,
             "message": message,
             "changes": filtered_changes,
-        },
+            "title": title,
+            "content_id": content_id,
+            "media_type": media_type,
+        }, message="Upload complete", changes=changes
     )
 
 
-def get_previous_log_timestamp(conn, movie_id):
+def get_previous_log_timestamp(conn, content_id, content_type):
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT MAX(logged_at) FROM update_logs WHERE movie_id = %s;",
-            (movie_id,),
+            """
+            SELECT MAX(logged_at)
+            FROM update_logs
+            WHERE content_id = %s AND content_type = %s;
+            """,
+            (content_id, content_type),
         )
-        return cur.fetchone()[0] or datetime.min
+        result = cur.fetchone()
+        return result[0] or datetime.min
 
 
 def process_media_upload(conn, tmdb_id, media_type):
     if media_type == "movie":
         movie_data = get_movie_data(tmdb_id)
-        insert_or_update_movie_data(conn, movie_data)
+        insert_or_update_movie_data(conn, movie_data, media_type)
         return movie_data[
             "id"
         ], f"✅ Movie '{movie_data.get('title')}' processed successfully."
@@ -466,19 +492,19 @@ def process_media_upload(conn, tmdb_id, media_type):
     return None, "❌ Invalid media type selected."
 
 
-def fetch_new_update_logs(conn, movie_id, since):
+def fetch_new_update_logs(conn, content_id, content_type, since):
     with conn.cursor() as cur:
         cur.execute(
             """
             SELECT logged_at, update_type, updated_field, previous_value, current_value
             FROM update_logs
-            WHERE movie_id = %s AND logged_at > %s
+            WHERE content_id = %s AND content_type = %s AND logged_at > %s
             ORDER BY logged_at DESC;
-        """,
-            (movie_id, since),
+            """,
+            (content_id, content_type, since),
         )
         logs = cur.fetchall()
-
+        print("🧪 Fetched logs:", logs)  # ← must be inside the function
     return [
         {
             "logged_at": log[0],
