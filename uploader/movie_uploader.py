@@ -1,8 +1,8 @@
-import traceback
 from datetime import datetime
 from db.logger import log_update
-from tmdb.movie_api import get_movie_data
 from psycopg2 import sql
+from tmdb.movie_api import get_movie_data
+import traceback
 
 
 def update_movie_data(conn, movie, media_type, verbose=False):
@@ -73,7 +73,7 @@ def compare_fields(existing_row, column_names, fields, verbose=False):
         # Normalize types
         if isinstance(old, (int, float)) and isinstance(new, str):
             try:
-                new = float(new) if '.' in new else int(new)
+                new = float(new) if "." in new else int(new)
             except ValueError:
                 pass  # keep as string if coercion fails
 
@@ -159,7 +159,6 @@ def insert_movie_data(conn, movie, media_type, verbose=False):
     return fields_dict
 
 
-
 def insert_collection_if_needed(cur, collection):
     if not collection:
         return
@@ -201,7 +200,6 @@ def extract_movie_fields(data):
         "budget": data.get("budget"),
         "revenue": data.get("revenue"),
     }
-
 
 
 def insert_or_update_movie_data(conn, movie, media_type):
