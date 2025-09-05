@@ -1,8 +1,8 @@
 from datetime import datetime
 from db.logger import log_update
 from psycopg2 import sql
-from tmdb.movie_api import get_movie_data
 import traceback
+import json
 
 
 def update_movie_data(conn, movie, media_type, verbose=False):
@@ -37,21 +37,37 @@ def update_movie_data(conn, movie, media_type, verbose=False):
             cur.execute(query, values)
             conn.commit()
 
-            print(f"🔄 Updated movie: {movie['title']}")
-            for field, old, new in changed_fields:
-                print(f" - {field}: '{old}' ➡️ '{new}'")
-                log_update(
-                    cur,
-                    movie["movie_id"],
-                    movie.get("movie_title") or movie.get("title"),
-                    media_type,  # ← this is your content_type
-                    "field_updated",
-                    field,
-                    old,
-                    new,
-                )
-            else:
-                print(f"✅ No changes for movie: {movie['title']}")
+        print(f"🔄 Updated movie: {movie['title']}")
+
+        for field, old, new in changed_fields:
+            print(f" - {field}: '{old}' ➡️ '{new}'")
+
+            context = json.dumps(
+                {
+                    "action": "update",
+                    "field": field,
+                    "previous": old,
+                    "current": new,
+                    "source": "movie_update_pipeline",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
+
+            log_update(
+                cur,
+                content_id=movie["movie_id"],
+                content_title=movie.get("movie_title") or movie.get("title"),
+                content_type=media_type,
+                update_type="field_updated",
+                field_name=field,
+                previous_value=old,
+                current_value=new,
+                context=context,
+                source="backend_script",
+                timestamp=datetime.utcnow(),
+            )
+        else:
+            print(f"✅ No changes for movie: {movie['title']}")
 
     return fields_dict
 
@@ -142,18 +158,32 @@ def insert_movie_data(conn, movie, media_type, verbose=False):
         if null_fields:
             print(f"⚠️ Null fields: {null_fields}")
 
-        # Audit log each inserted field
+        print(f"🆕 Inserted movie: {movie['title']}")
+
         for field, value in fields_dict.items():
             if not isinstance(value, sql.SQL):  # skip raw SQL expressions
+                context = json.dumps(
+                    {
+                        "action": "insert",
+                        "field": field,
+                        "value": value,
+                        "source": "insert_pipeline",
+                        "timestamp": datetime.utcnow().isoformat(),
+                    }
+                )
+
                 log_update(
                     cur,
-                    movie_id,
-                    title,
-                    media_type,
-                    "field_inserted",
-                    field,
-                    None,
-                    value,
+                    content_id=movie_id,
+                    content_title=title,
+                    content_type=media_type,
+                    update_type="field_inserted",
+                    field_name=field,
+                    previous_value=None,
+                    current_value=value,
+                    context=context,
+                    source="backend_script",
+                    timestamp=datetime.utcnow(),
                 )
 
     return fields_dict
@@ -276,18 +306,32 @@ def insert_genres(cur, movie_id, movie):
             """,
                 (movie_id, genre["id"]),
             )
+
+            context = json.dumps(
+                {
+                    "action": "link",
+                    "entity": "genre",
+                    "genre_name": genre["name"],
+                    "source": "genre_link_pipeline",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
+
             log_update(
                 cur,
-                movie_id,
-                movie["movie_title"],
-                "genre_added",
-                "genre",
-                None,
-                genre["name"],
+                content_id=movie_id,
+                content_title=movie["movie_title"],
+                content_type="movie",
+                update_type="genre_added",
+                field_name="genre",
+                previous_value=None,
+                current_value=genre["name"],
+                context=context,
+                source="backend_script",
+                timestamp=datetime.utcnow(),
             )
-            print(
-                f"➕ Genre '{genre['name']}' linked to movie '{movie['movie_title']}'"
-            )
+
+            print(f"Genre '{genre['name']}' linked to movie '{movie['movie_title']}'")
 
 
 def insert_production_companies(cur, movie_id, movie):
@@ -318,17 +362,33 @@ def insert_production_companies(cur, movie_id, movie):
             """,
                 (movie_id, company["id"]),
             )
+
+            context = json.dumps(
+                {
+                    "action": "link",
+                    "entity": "company",
+                    "company_name": company["name"],
+                    "source": "company_link_pipeline",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
+
             log_update(
                 cur,
-                movie_id,
-                movie["movie_title"],
-                "company_added",
-                "company",
-                None,
-                company["name"],
+                content_id=movie_id,
+                content_title=movie["movie_title"],
+                content_type="movie",
+                update_type="company_added",
+                field_name="company",
+                previous_value=None,
+                current_value=company["name"],
+                context=context,
+                source="backend_script",
+                timestamp=datetime.utcnow(),
             )
+
             print(
-                f"🏢 Company '{company['name']}' linked to movie '{movie['movie_title']}'"
+                f"Company '{company['name']}' linked to movie '{movie['movie_title']}'"
             )
 
 
@@ -355,18 +415,31 @@ def insert_spoken_languages(cur, movie_id, movie):
             """,
                 (movie_id, lang["iso_639_1"]),
             )
+            context = json.dumps(
+                {
+                    "action": "link",
+                    "entity": "language",
+                    "language_name": lang["name"],
+                    "source": "language_link_pipeline",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
+
             log_update(
                 cur,
-                movie_id,
-                movie["movie_title"],
-                "language_added",
-                "language",
-                None,
-                lang["name"],
+                content_id=movie_id,
+                content_title=movie["movie_title"],
+                content_type="movie",
+                update_type="language_added",
+                field_name="language",
+                previous_value=None,
+                current_value=lang["name"],
+                context=context,
+                source="backend_script",
+                timestamp=datetime.utcnow(),
             )
-            print(
-                f"🗣️ Language '{lang['name']}' linked to movie '{movie['movie_title']}'"
-            )
+
+            print(f"Language '{lang['name']}' linked to movie '{movie['movie_title']}'")
 
 
 def insert_production_countries(cur, movie_id, movie):
@@ -392,15 +465,31 @@ def insert_production_countries(cur, movie_id, movie):
             """,
                 (movie_id, country["iso_3166_1"]),
             )
+
+            context = json.dumps(
+                {
+                    "action": "link",
+                    "entity": "country",
+                    "country_name": country["name"],
+                    "source": "country_link_pipeline",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
+
             log_update(
                 cur,
-                movie_id,
-                movie["movie_title"],
-                "country_added",
-                "country",
-                None,
-                country["name"],
+                content_id=movie_id,
+                content_title=movie["movie_title"],
+                content_type="movie",
+                update_type="country_added",
+                field_name="country",
+                previous_value=None,
+                current_value=country["name"],
+                context=context,
+                source="backend_script",
+                timestamp=datetime.utcnow(),
             )
+
             print(
                 f"🌍 Country '{country['name']}' linked to movie '{movie['movie_title']}'"
             )
@@ -437,18 +526,32 @@ def insert_cast(cur, movie_id, movie):
             """,
                 (movie_id, cast["id"], cast.get("character"), cast.get("order")),
             )
+
+            context = json.dumps(
+                {
+                    "action": "link",
+                    "entity": "cast",
+                    "cast_name": cast["name"],
+                    "source": "cast_link_pipeline",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
+
             log_update(
                 cur,
-                movie_id,
-                movie["movie_title"],
-                "cast_added",
-                "cast",
-                None,
-                cast["name"],
+                content_id=movie_id,
+                content_title=movie["movie_title"],
+                content_type="movie",
+                update_type="cast_added",
+                field_name="cast",
+                previous_value=None,
+                current_value=cast["name"],
+                context=context,
+                source="backend_script",
+                timestamp=datetime.utcnow(),
             )
-            print(
-                f"🎭 Cast '{cast['name']}' as '{cast.get('character')}' added to movie '{movie['movie_title']}'"
-            )
+
+            print(f"Cast '{cast['name']}' linked to movie '{movie['movie_title']}'")
 
 
 def insert_crew(cur, movie_id, movie):
@@ -482,15 +585,31 @@ def insert_crew(cur, movie_id, movie):
             """,
                 (movie_id, crew["id"], crew.get("department"), crew.get("job")),
             )
+
+            context = json.dumps(
+                {
+                    "action": "link",
+                    "entity": "crew",
+                    "crew_name": crew["name"],
+                    "source": "crew_link_pipeline",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
+
             log_update(
                 cur,
-                movie_id,
-                movie["movie_title"],
-                "crew_added",
-                "crew",
-                None,
-                crew["name"],
+                content_id=movie_id,
+                content_title=movie["movie_title"],
+                content_type="movie",
+                update_type="crew_added",
+                field_name="crew",
+                previous_value=None,
+                current_value=crew["name"],
+                context=context,
+                source="backend_script",
+                timestamp=datetime.utcnow(),
             )
+
             print(
-                f"🎬 Crew '{crew['name']}' ({crew.get('job')}) added to movie '{movie['movie_title']}'"
+                f"🎬 Crew '{crew['name']}' ({crew.get('job')}) linked to movie '{movie['movie_title']}'"
             )

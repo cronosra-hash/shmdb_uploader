@@ -2,7 +2,6 @@
 import os
 import sys
 from datetime import datetime, timedelta
-from typing import Optional
 
 # ─── Third-Party Imports ─────────────────────────────────────────────────────
 import requests
@@ -512,21 +511,6 @@ def fetch_new_update_logs(conn, content_id, content_type, since):
         }
         for log in logs
     ]
-
-
-def classify_freshness(lastupdated):
-    if not lastupdated:
-        return "stale"  # treat missing as stale
-
-    now = datetime.utcnow()
-    delta = now - lastupdated
-
-    if delta <= timedelta(days=7):
-        return "fresh"
-    elif delta <= timedelta(days=30):
-        return "moderate"
-    else:
-        return "stale"
 
 
 def filter_changes(raw_changes):

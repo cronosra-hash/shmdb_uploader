@@ -1,11 +1,10 @@
 from datetime import datetime
 from db.logger import log_update
-from tmdb.tv_api import fetch_series, fetch_season
 from utils import parse_date
 import requests
 import traceback
 from psycopg2 import sql
-
+import json
 
 def update_series_data(conn, series, media_type="series", verbose=False):
     """
@@ -40,20 +39,33 @@ def update_series_data(conn, series, media_type="series", verbose=False):
             cur.execute(query, values)
             conn.commit()
 
-            print(f"🔄 Updated Series: {series_title}")
-            for field, old, new in changed_fields:
-                print(f" - {field}: '{old}' ➡️ '{new}'")
-                log_update(
-                    cur,
-                    series_id,
-                    series_title,
-                    media_type,
-                    "field_updated",
-                    field,
-                    old,
-                    new,
-                )
+        print(f"🔄 Updated Series: {series_title}")
 
+        for field, old, new in changed_fields:
+            print(f" - {field}: '{old}' ➡️ '{new}'")
+
+            context = json.dumps({
+                "action": "update",
+                "field": field,
+                "previous": old,
+                "current": new,
+                "source": "series_update_pipeline",
+                "timestamp": datetime.utcnow().isoformat()
+            })
+
+            log_update(
+                cur,
+                content_id=series_id,
+                content_title=series_title,
+                content_type=media_type,
+                update_type="field_updated",
+                field_name=field,
+                previous_value=old,
+                current_value=new,
+                context=context,
+                source="backend_script",
+                timestamp=datetime.utcnow()
+            )
         else:
             print(f"✅ No changes for series: {series_title}")
 
@@ -165,19 +177,33 @@ def insert_series_data(conn, series, media_type="tv", verbose=False):
                 cur.execute(query, values)
                 conn.commit()
 
-                print(f"✅ Inserted Series: {series_title}")
-                for field, old, new in changed_fields:
-                    print(f" - {field}: '{old}' ➡️ '{new}'")
-                    log_update(
-                        cur,
-                        series_id,
-                        series_title,
-                        media_type,
-                        "field_updated",
-                        field,
-                        old,
-                        new,
-                    )
+            print(f"🔄 Updated Series: {series_title}")
+
+            for field, old, new in changed_fields:
+                print(f" - {field}: '{old}' ➡️ '{new}'")
+
+                context = json.dumps({
+                    "action": "update",
+                    "field": field,
+                    "previous": old,
+                    "current": new,
+                    "source": "series_update_pipeline",
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+
+                log_update(
+                    cur,
+                    content_id=series_id,
+                    content_title=series_title,
+                    content_type=media_type,
+                    update_type="field_updated",
+                    field_name=field,
+                    previous_value=old,
+                    current_value=new,
+                    context=context,
+                    source="backend_script",
+                    timestamp=datetime.utcnow()
+                )
             else:
                 print(f"✅ No changes for series: {series_title}")
         else:
@@ -215,17 +241,29 @@ def insert_series_data(conn, series, media_type="tv", verbose=False):
             conn.commit()
 
             print(f"🆕 Inserted series: {series_title}")
+
             for field, value in fields.items():
                 if value is not None:
+                    context = json.dumps({
+                        "action": "insert",
+                        "field": field,
+                        "value": value,
+                        "source": "series_insert_pipeline",
+                        "timestamp": datetime.utcnow().isoformat()
+                    })
+
                     log_update(
                         cur,
-                        series_id,
-                        series_title,
-                        media_type,
-                        "field_inserted",
-                        field,
-                        None,
-                        value,
+                        content_id=series_id,
+                        content_title=series_title,
+                        content_type=media_type,
+                        update_type="field_inserted",
+                        field_name=field,
+                        previous_value=None,
+                        current_value=value,
+                        context=context,
+                        source="backend_script",
+                        timestamp=datetime.utcnow()
                     )
 
     return fields
