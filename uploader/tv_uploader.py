@@ -40,7 +40,7 @@ def update_series_data(conn, series, media_type="series", verbose=False):
             cur.execute(query, values)
             conn.commit()
 
-            print(f"🔄 Updated series: {series_title}")
+            print(f"🔄 Updated Series: {series_title}")
             for field, old, new in changed_fields:
                 print(f" - {field}: '{old}' ➡️ '{new}'")
                 log_update(
@@ -53,6 +53,7 @@ def update_series_data(conn, series, media_type="series", verbose=False):
                     old,
                     new,
                 )
+
         else:
             print(f"✅ No changes for series: {series_title}")
 
@@ -164,7 +165,7 @@ def insert_series_data(conn, series, media_type="tv", verbose=False):
                 cur.execute(query, values)
                 conn.commit()
 
-                print(f"🔄 Updated series: {series_title}")
+                print(f"✅ Inserted Series: {series_title}")
                 for field, old, new in changed_fields:
                     print(f" - {field}: '{old}' ➡️ '{new}'")
                     log_update(
@@ -319,6 +320,9 @@ def insert_or_update_series_data(conn, series, tmdb_api_key):
             insert_series_genres(cur, series_id, series)
             insert_series_cast(cur, series_id, series)
             insert_series_crew(cur, series_id, series)
+            insert_series_companies(cur, series_id, series)
+            insert_series_languages(cur, series_id, series)
+            insert_series_countries(cur, series_id, series)
 
         conn.commit()
         print(f"✅ Series ID {series_id} processed successfully.")
@@ -485,4 +489,128 @@ def insert_series_genres(cur, series_id, series):
                 ON CONFLICT DO NOTHING;
             """,
                 (series_id, genre_id),
+            )
+
+def insert_series_companies(cur, series_id, series):
+    series_title = series.get("name")
+
+    for company in series.get("production_companies", []):
+        cur.execute(
+            """
+            INSERT INTO production_companies (company_id, company_name, logo_path, origin_country)
+            VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING;
+        """,
+            (
+                company["id"],
+                company["name"],
+                company.get("logo_path"),
+                company.get("origin_country"),
+            ),
+        )
+
+        cur.execute(
+            """
+            SELECT 1 FROM series_companies WHERE series_id = %s AND company_id = %s;
+        """,
+            (series_id, company["id"]),
+        )
+        if not cur.fetchone():
+            cur.execute(
+                """
+                INSERT INTO series_companies (series_id, company_id) VALUES (%s, %s);
+            """,
+                (series_id, company["id"]),
+            )
+            log_update(
+                cur,
+                series_id,
+                series_title,
+                "company_added",
+                "company",
+                None,
+                company["name"],
+            )
+            print(
+                f"🎨 Linked company '{company['name']}' to series '{series_title}'"
+            )
+
+def insert_series_languages(cur, series_id, series):
+    series_title = series.get("name")
+
+    for lang in series.get("spoken_languages", []):
+        cur.execute(
+            """
+            INSERT INTO spoken_languages (iso_639_1, language_name)
+            VALUES (%s, %s) ON CONFLICT DO NOTHING;
+        """,
+            (lang["iso_639_1"], lang["name"]),
+        )
+
+        cur.execute(
+            """
+            SELECT 1 FROM series_languages WHERE series_id = %s AND language_code = %s;
+        """,
+            (series_id, lang["iso_639_1"]),
+        )
+        if not cur.fetchone():
+            cur.execute(
+                """
+                INSERT INTO series_languages (series_id, language_code) VALUES (%s, %s);
+            """,
+                (series_id, lang["iso_639_1"]),
+            )
+            log_update(
+                cur,
+                series_id,
+                series_title,
+                "language_added",
+                "language",
+                None,
+                lang["name"],
+            )
+            print(
+                f"🎨 Linked language '{lang['name']}' to series '{series_title}'"
+            )
+
+def insert_series_countries(cur, series_id, series):
+    series_title = series.get("name")
+
+    for country_code in series.get("origin_country", []):
+        if not country_code:
+            continue
+
+        # Insert country code only (name may not be available)
+        cur.execute(
+            """
+            INSERT INTO countries (iso_3166_1)
+            VALUES (%s) ON CONFLICT DO NOTHING;
+            """,
+            (country_code,),
+        )
+
+        cur.execute(
+            """
+            SELECT 1 FROM series_countries WHERE series_id = %s AND country_code = %s;
+            """,
+            (series_id, country_code),
+        )
+        if not cur.fetchone():
+            cur.execute(
+                """
+                INSERT INTO series_countries (series_id, country_code)
+                VALUES (%s, %s);
+                """,
+                (series_id, country_code),
+            )
+            log_update(
+                cur,
+                series_id,
+                series_title,
+                "country_added",
+                "country",
+                None,
+                country_code,
+            )
+            print(
+                f"🎨 Linked country '{country_code}' to series '{series_title}'"
             )

@@ -134,13 +134,13 @@ async def read_root(request: Request):
             cur.execute("SELECT COUNT(*) FROM series;")
             stats["series_count"] = cur.fetchone()[0]
 
-            # Last update logged_at
-            cur.execute("SELECT MAX(logged_at) FROM update_logs;")
+            # Last update timestamp
+            cur.execute("SELECT MAX(timestamp) FROM update_logs;")
             stats["last_update"] = cur.fetchone()[0]
 
             # Recent updates
             cur.execute(
-                "SELECT COUNT(*) FROM update_logs WHERE logged_at >= %s;",
+                "SELECT COUNT(*) FROM update_logs WHERE timestamp >= %s;",
                 (datetime.utcnow() - timedelta(days=7),),
             )
             stats["recent_updates"] = cur.fetchone()[0]
@@ -167,9 +167,9 @@ async def read_root(request: Request):
 
             # Most changed fields
             cur.execute("""
-                SELECT updated_field, COUNT(*) AS freq
+                SELECT field_name, COUNT(*) AS freq
                 FROM update_logs
-                GROUP BY updated_field 
+                GROUP BY field_name
                 ORDER BY freq DESC
                 LIMIT 5;
             """)
@@ -414,21 +414,19 @@ async def upload(request: Request, tmdb_id: int, media_type: str):
             print("🧪 No previous log found — defaulting to datetime.min")
             previous_max = datetime.min
 
-        print("🧪 previous_max timestamp:", previous_max)
-
         content_id, base_message = process_media_upload(conn, tmdb_id, media_type)
 
         if content_id:
             print("🧪 Forcing log fetch...")
             changes = fetch_new_update_logs(conn, content_id, media_type, previous_max)
-            print("🧪 Returned changes:", changes)
-            print("🧪 previous_max timestamp:", previous_max)
 
             filtered_changes = filter_changes(changes)
 
             # Extract title from first change (if available)
             if filtered_changes:
-                title = filtered_changes[0].get("title") or filtered_changes[0].get("movie_title", "")
+                title = filtered_changes[0].get("title") or filtered_changes[0].get(
+                    "movie_title", ""
+                )
 
             message = (
                 base_message
@@ -445,8 +443,6 @@ async def upload(request: Request, tmdb_id: int, media_type: str):
         if conn:
             conn.close()
 
-    print("🧪 Filtered changes:", filtered_changes)
-
     return templates.TemplateResponse(
         "result.html",
         {
@@ -456,7 +452,9 @@ async def upload(request: Request, tmdb_id: int, media_type: str):
             "title": title,
             "content_id": content_id,
             "media_type": media_type,
-        }, message="Upload complete", changes=changes
+        },
+        message="Upload complete",
+        changes=changes,
     )
 
 
@@ -464,7 +462,7 @@ def get_previous_log_timestamp(conn, content_id, content_type):
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT MAX(logged_at)
+            SELECT MAX(timestamp)
             FROM update_logs
             WHERE content_id = %s AND content_type = %s;
             """,
@@ -496,20 +494,19 @@ def fetch_new_update_logs(conn, content_id, content_type, since):
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT logged_at, update_type, updated_field, previous_value, current_value
+            SELECT timestamp, update_type, field_name, previous_value, current_value
             FROM update_logs
-            WHERE content_id = %s AND content_type = %s AND logged_at > %s
-            ORDER BY logged_at DESC;
+            WHERE content_id = %s AND content_type = %s AND timestamp > %s
+            ORDER BY timestamp DESC;
             """,
             (content_id, content_type, since),
         )
         logs = cur.fetchall()
-        print("🧪 Fetched logs:", logs)  # ← must be inside the function
     return [
         {
-            "logged_at": log[0],
+            "timestamp": log[0],
             "update_type": log[1],
-            "updated_field": log[2],
+            "field_name": log[2],
             "previous_value": log[3],
             "current_value": log[4],
         }
@@ -535,7 +532,7 @@ def classify_freshness(lastupdated):
 def filter_changes(raw_changes):
     """
     Filters out changes where previous_value == current_value or both are empty.
-    Formats logged_at for display.
+    Formats timestamp for display.
     """
     filtered = []
     for change in raw_changes:
@@ -549,9 +546,9 @@ def filter_changes(raw_changes):
         if str(old) == str(new):
             continue
 
-        ts = change.get("logged_at")
+        ts = change.get("timestamp")
         if isinstance(ts, datetime):
-            change["logged_at"] = ts.strftime("%Y-%m-%d %H:%M:%S")
+            change["timestamp"] = ts.strftime("%Y-%m-%d %H:%M:%S")
 
         filtered.append(change)
 

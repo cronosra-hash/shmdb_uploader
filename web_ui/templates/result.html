@@ -24,9 +24,9 @@
   <tbody>
     {% for change in changes %}
     <tr style="--row-index: {{ loop.index0 }}">
-      <td>{{ change["logged_at"] | datetimeformat }}</td>
+      <td>{{ change["timestamp"] | datetimeformat }}</td>
       <td>{{ change["update_type"] }}</td>
-      <td>{{ change["updated_field"] }}</td>
+      <td>{{ change["field_name"] }}</td>
       <td>{{ change["previous_value"] }}</td>
       <td>{{ change["current_value"] }}</td>
     </tr>
