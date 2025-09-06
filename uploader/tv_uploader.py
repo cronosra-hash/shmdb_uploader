@@ -469,8 +469,7 @@ def insert_series_cast(cur, series_id, series):
                 timestamp=datetime.utcnow(),
             )
 
-            print(f"Cast '{cast_list[0]['name']}' linked to series '{series['name']}'")
-
+            print(f"📺 Cast '{cast_list[0]['name']}' linked to series '{series['name']}'")
 
 def insert_series_crew(cur, series_id, series):
     crew_list = series.get("credits", {}).get("crew", [])
@@ -520,7 +519,7 @@ def insert_series_crew(cur, series_id, series):
                 timestamp=datetime.utcnow(),
             )
 
-            print(f"Crew '{crew_list[0]['name']}' linked to series '{series['name']}'")
+            print(f"📺 Crew '{crew_list[0]['name']}' linked to series '{series['name']}'")
 
 
 def insert_series_genres(cur, series_id, series):
@@ -575,7 +574,7 @@ def insert_series_genres(cur, series_id, series):
                 timestamp=datetime.utcnow(),
             )
 
-            print(f"🎬 Genre '{genre_name}' linked to series '{series['name']}'")
+            print(f"📺 Genre '{genre_name}' linked to series '{series['name']}'")
 
 
 def insert_series_companies(cur, series_id, series):
@@ -630,7 +629,7 @@ def insert_series_companies(cur, series_id, series):
                 timestamp=datetime.utcnow(),
             )
 
-            print(f"🎬 Company '{company['name']}' linked to series '{series['name']}'")
+            print(f"📺 Company '{company['name']}' linked to series '{series['name']}'")
 
 
 def insert_series_languages(cur, series_id, series):
@@ -680,7 +679,7 @@ def insert_series_languages(cur, series_id, series):
                 timestamp=datetime.utcnow(),
             )
 
-            print(f"🎬 Language '{lang['name']}' linked to series '{series['name']}'")
+            print(f"📺 Language '{lang['name']}' linked to series '{series['name']}'")
 
 
 def insert_series_countries(cur, series_id, series):
@@ -735,4 +734,4 @@ def insert_series_countries(cur, series_id, series):
                 timestamp=datetime.utcnow(),
             )
 
-            print(f"🎬 Country '{country_code}' linked to series '{series['name']}'")
+            print(f"📺 Country '{country_code}' linked to series '{series['name']}'")
