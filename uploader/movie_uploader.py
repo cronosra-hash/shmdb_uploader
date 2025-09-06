@@ -167,7 +167,7 @@ def insert_movie_data(conn, movie, media_type, verbose=False):
                         "action": "insert",
                         "field": field,
                         "value": value,
-                        "source": "insert_pipeline",
+                        "source": "movie_insert_pipeline",
                         "timestamp": datetime.utcnow().isoformat(),
                     }
                 )

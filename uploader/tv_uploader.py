@@ -1,12 +1,14 @@
 from datetime import datetime
 from db.logger import log_update
 from utils import parse_date
+from utils.logging import safe_json_context
 import requests
 import traceback
 from psycopg2 import sql
 import json
 
-def update_series_data(conn, series, media_type="series", verbose=False):
+
+def update_series_data(conn, series, media_type="tv", verbose=False):
     """
     Updates an existing series record in the database if any fields have changed.
     Uses schema-aware comparison and logs each change for auditing.
@@ -44,14 +46,16 @@ def update_series_data(conn, series, media_type="series", verbose=False):
         for field, old, new in changed_fields:
             print(f" - {field}: '{old}' ➡️ '{new}'")
 
-            context = json.dumps({
-                "action": "update",
-                "field": field,
-                "previous": old,
-                "current": new,
-                "source": "series_update_pipeline",
-                "timestamp": datetime.utcnow().isoformat()
-            })
+            context = safe_json_context(
+                {
+                    "action": "update",
+                    "field": field,
+                    "previous": old,
+                    "current": new,
+                    "source": "series_update_pipeline",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
 
             log_update(
                 cur,
@@ -64,7 +68,7 @@ def update_series_data(conn, series, media_type="series", verbose=False):
                 current_value=new,
                 context=context,
                 source="backend_script",
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
         else:
             print(f"✅ No changes for series: {series_title}")
@@ -182,14 +186,16 @@ def insert_series_data(conn, series, media_type="tv", verbose=False):
             for field, old, new in changed_fields:
                 print(f" - {field}: '{old}' ➡️ '{new}'")
 
-                context = json.dumps({
-                    "action": "update",
-                    "field": field,
-                    "previous": old,
-                    "current": new,
-                    "source": "series_update_pipeline",
-                    "timestamp": datetime.utcnow().isoformat()
-                })
+                context = safe_json_context(
+                    {
+                        "action": "update",
+                        "field": field,
+                        "previous": old,
+                        "current": new,
+                        "source": "series_update_pipeline",
+                        "timestamp": datetime.utcnow().isoformat(),
+                    }
+                )
 
                 log_update(
                     cur,
@@ -202,7 +208,7 @@ def insert_series_data(conn, series, media_type="tv", verbose=False):
                     current_value=new,
                     context=context,
                     source="backend_script",
-                    timestamp=datetime.utcnow()
+                    timestamp=datetime.utcnow(),
                 )
             else:
                 print(f"✅ No changes for series: {series_title}")
@@ -244,13 +250,15 @@ def insert_series_data(conn, series, media_type="tv", verbose=False):
 
             for field, value in fields.items():
                 if value is not None:
-                    context = json.dumps({
-                        "action": "insert",
-                        "field": field,
-                        "value": value,
-                        "source": "series_insert_pipeline",
-                        "timestamp": datetime.utcnow().isoformat()
-                    })
+                    context = json.dumps(
+                        {
+                            "action": "insert",
+                            "field": field,
+                            "value": value,
+                            "source": "series_insert_pipeline",
+                            "timestamp": datetime.utcnow().isoformat(),
+                        }
+                    )
 
                     log_update(
                         cur,
@@ -263,7 +271,7 @@ def insert_series_data(conn, series, media_type="tv", verbose=False):
                         current_value=value,
                         context=context,
                         source="backend_script",
-                        timestamp=datetime.utcnow()
+                        timestamp=datetime.utcnow(),
                     )
 
     return fields
@@ -415,7 +423,6 @@ def normalize_series_payload(series):
 
 def insert_series_cast(cur, series_id, series):
     cast_list = series.get("credits", {}).get("cast", [])[:30]
-    series_title = series.get("name")
 
     for cast in cast_list:
         ensure_person_exists(cur, cast)
@@ -428,12 +435,6 @@ def insert_series_cast(cur, series_id, series):
         )
 
         if not cur.fetchone():
-            print(
-                f"🎭 Added cast member '{cast['name']}' as '{cast.get('character')}' to series '{series_title}'"
-            )
-            log_update(
-                cur, series_id, series_title, "cast_added", "cast", None, cast["name"]
-            )
             cur.execute(
                 """
                 INSERT INTO series_cast (
@@ -444,11 +445,35 @@ def insert_series_cast(cur, series_id, series):
             """,
                 (series_id, cast["id"], cast.get("order", 0), cast.get("character")),
             )
+            context = json.dumps(
+                {
+                    "action": "link",
+                    "entity": "cast",
+                    "cast_name": cast_list[0]["name"],
+                    "source": "cast_link_pipeline",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
+
+            log_update(
+                cur,
+                content_id=series_id,
+                content_title=series["name"],
+                content_type="tv",
+                update_type="cast_added",
+                field_name="cast",
+                previous_value=None,
+                current_value=cast_list[0]["name"],
+                context=context,
+                source="backend_script",
+                timestamp=datetime.utcnow(),
+            )
+
+            print(f"Cast '{cast_list[0]['name']}' linked to series '{series['name']}'")
 
 
 def insert_series_crew(cur, series_id, series):
     crew_list = series.get("credits", {}).get("crew", [])
-    series_title = series.get("name")
 
     for crew in crew_list:
         ensure_person_exists(cur, crew)
@@ -461,12 +486,6 @@ def insert_series_crew(cur, series_id, series):
         )
 
         if not cur.fetchone():
-            print(
-                f"🎬 Added crew member '{crew['name']}' as '{crew.get('job')}' to series '{series_title}'"
-            )
-            log_update(
-                cur, series_id, series_title, "crew_added", "crew", None, crew["name"]
-            )
             cur.execute(
                 """
                 INSERT INTO series_crew (
@@ -477,11 +496,35 @@ def insert_series_crew(cur, series_id, series):
             """,
                 (series_id, crew["id"], crew.get("department"), crew.get("job")),
             )
+            context = json.dumps(
+                {
+                    "action": "link",
+                    "entity": "crew",
+                    "crew_name": crew_list[0]["name"],
+                    "source": "crew_link_pipeline",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
+
+            log_update(
+                cur,
+                content_id=series_id,
+                content_title=series["name"],
+                content_type="tv",
+                update_type="crew_added",
+                field_name="crew",
+                previous_value=None,
+                current_value=crew_list[0]["name"],
+                context=context,
+                source="backend_script",
+                timestamp=datetime.utcnow(),
+            )
+
+            print(f"Crew '{crew_list[0]['name']}' linked to series '{series['name']}'")
 
 
 def insert_series_genres(cur, series_id, series):
     genres = series.get("genres", [])
-    series_title = series.get("name")
 
     for genre in genres:
         genre_id = genre.get("id")
@@ -508,30 +551,34 @@ def insert_series_genres(cur, series_id, series):
         )
 
         if not cur.fetchone():
-            print(f"🎨 Linked genre '{genre_name}' to series '{series_title}'")
+            context = json.dumps(
+                {
+                    "action": "link",
+                    "entity": "series_genre",
+                    "genre_name": genre_name,
+                    "source": "genre_link_pipeline",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
+
             log_update(
                 cur,
-                series_id,
-                series_title,
-                "genre_added",
-                "genre_name",
-                None,
-                genre_name,
+                content_id=series_id,
+                content_title=series["name"],
+                content_type="tv",
+                update_type="genre_added",
+                field_name="genre",
+                previous_value=None,
+                current_value=genre_name,
+                context=context,
+                source="backend_script",
+                timestamp=datetime.utcnow(),
             )
-            cur.execute(
-                """
-                INSERT INTO series_genres (
-                    series_id, genre_id, last_updated
-                )
-                VALUES (%s, %s, CURRENT_TIMESTAMP)
-                ON CONFLICT DO NOTHING;
-            """,
-                (series_id, genre_id),
-            )
+
+            print(f"🎬 Genre '{genre_name}' linked to series '{series['name']}'")
+
 
 def insert_series_companies(cur, series_id, series):
-    series_title = series.get("name")
-
     for company in series.get("production_companies", []):
         cur.execute(
             """
@@ -559,22 +606,34 @@ def insert_series_companies(cur, series_id, series):
             """,
                 (series_id, company["id"]),
             )
+            context = json.dumps(
+                {
+                    "action": "link",
+                    "entity": "series_company",
+                    "company_name": company["name"],
+                    "source": "company_link_pipeline",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
+
             log_update(
                 cur,
-                series_id,
-                series_title,
-                "company_added",
-                "company",
-                None,
-                company["name"],
+                content_id=series_id,
+                content_title=series["name"],
+                content_type="tv",
+                update_type="company_added",
+                field_name="company",
+                previous_value=None,
+                current_value=company["name"],
+                context=context,
+                source="backend_script",
+                timestamp=datetime.utcnow(),
             )
-            print(
-                f"🎨 Linked company '{company['name']}' to series '{series_title}'"
-            )
+
+            print(f"🎬 Company '{company['name']}' linked to series '{series['name']}'")
+
 
 def insert_series_languages(cur, series_id, series):
-    series_title = series.get("name")
-
     for lang in series.get("spoken_languages", []):
         cur.execute(
             """
@@ -597,22 +656,34 @@ def insert_series_languages(cur, series_id, series):
             """,
                 (series_id, lang["iso_639_1"]),
             )
+            context = json.dumps(
+                {
+                    "action": "link",
+                    "entity": "series_language",
+                    "language_name": lang["name"],
+                    "source": "language_link_pipeline",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
+
             log_update(
                 cur,
-                series_id,
-                series_title,
-                "language_added",
-                "language",
-                None,
-                lang["name"],
+                content_id=series_id,
+                content_title=series["name"],
+                content_type="tv",
+                update_type="language_added",
+                field_name="language",
+                previous_value=None,
+                current_value=lang["name"],
+                context=context,
+                source="backend_script",
+                timestamp=datetime.utcnow(),
             )
-            print(
-                f"🎨 Linked language '{lang['name']}' to series '{series_title}'"
-            )
+
+            print(f"🎬 Language '{lang['name']}' linked to series '{series['name']}'")
+
 
 def insert_series_countries(cur, series_id, series):
-    series_title = series.get("name")
-
     for country_code in series.get("origin_country", []):
         if not country_code:
             continue
@@ -640,15 +711,28 @@ def insert_series_countries(cur, series_id, series):
                 """,
                 (series_id, country_code),
             )
+            context = json.dumps(
+                {
+                    "action": "link",
+                    "entity": "series_country",
+                    "country_code": country_code,
+                    "source": "country_link_pipeline",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
+
             log_update(
                 cur,
-                series_id,
-                series_title,
-                "country_added",
-                "country",
-                None,
-                country_code,
+                content_id=series_id,
+                content_title=series["name"],
+                content_type="tv",
+                update_type="country_added",
+                field_name="country",
+                previous_value=None,
+                current_value=country_code,
+                context=context,
+                source="backend_script",
+                timestamp=datetime.utcnow(),
             )
-            print(
-                f"🎨 Linked country '{country_code}' to series '{series_title}'"
-            )
+
+            print(f"🎬 Country '{country_code}' linked to series '{series['name']}'")
