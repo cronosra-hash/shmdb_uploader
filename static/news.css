@@ -1,0 +1,116 @@
+/* Base panel styling */
+.news-panel {
+  background: linear-gradient(145deg, #0d0d0d, #1a1a1a);
+  border: 2px solid #00f0ff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 0 20px #00f0ff88;
+  color: #e0f7ff;
+  font-family: 'Orbitron', sans-serif;
+  margin-bottom: 2rem;
+}
+
+/* Title styling */
+.news-panel h2 {
+  font-size: 1.8rem;
+  color: #00f0ff;
+  text-shadow: 0 0 6px #00f0ff;
+  margin-bottom: 1rem;
+}
+
+/* News list */
+.news-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Individual news item */
+.news-item {
+  background: #111;
+  border-left: 4px solid #00f0ff;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+/* Hover effect */
+.news-item:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 12px #00f0ff88;
+}
+
+/* News title link */
+.news-title {
+  color: #00f0ff;
+  font-weight: bold;
+  text-decoration: none;
+  font-size: 1.1rem;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.news-title:hover {
+  text-shadow: 0 0 8px #00f0ff;
+}
+
+/* Meta info */
+.news-meta {
+  font-size: 0.85rem;
+  color: #aaa;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Source badge */
+.news-source {
+  background: #00f0ff;
+  color: #000;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  box-shadow: 0 0 6px #00f0ff;
+}
+
+/* Date styling */
+.news-date {
+  font-style: italic;
+  color: #ccc;
+}
+
+/* Empty state */
+.news-empty {
+  text-align: center;
+  color: #ff4081;
+  font-weight: bold;
+  margin-top: 1rem;
+}
+
+/* Retry button */
+.news-empty button {
+  background: transparent;
+  border: 2px solid #ff4081;
+  color: #ff4081;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.news-empty button:hover {
+  background: #ff4081;
+  color: #000;
+  box-shadow: 0 0 10px #ff4081;
+}
+
+/* Footer timestamp */
+.news-footer {
+  margin-top: 1rem;
+  text-align: right;
+  font-size: 0.75rem;
+  color: #888;
+}

@@ -24,6 +24,8 @@ from services.freshness import get_freshness_summary  # or wherever you define i
 from services.titles import get_title_by_id
 from services.diagnostics import wrap_query
 from web_ui.filters import datetimeformat, ago, to_timezone, timestamp_color
+from routes import news
+from services.news_fetcher import get_all_news
 
 # from services.reviews import get_reviews_for_title
 from services.actors import get_cast_for_title
@@ -43,6 +45,8 @@ templates.env.filters["timestamp_color"] = timestamp_color
 
 # ─── Router Setup ────────────────────────────────────────────────────────────
 router = APIRouter()
+
+app.include_router(news.router)
 
 
 @router.get("/title/{title_id}", response_class=HTMLResponse)
@@ -74,10 +78,19 @@ async def index(request: Request):
 async def uploader(request: Request):
     return templates.TemplateResponse("uploader.html", get_stats_context(request))
 
+@app.get("/news")
+def news_page(request: Request):
+    articles = get_all_news(api_key="pub_000738d4a1274d798638038b9633580c")
+    return templates.TemplateResponse("news.html", {
+        "request": request,
+        "articles": articles
+    })
 
 def get_stats_context(request: Request):
+    articles = get_all_news(api_key="pub_000738d4a1274d798638038b9633580c")
     return {
         "request": request,
+        "articles": articles,
         "stats": {
             "active_release_years": stats.get_active_release_years(),
             "hidden_gems": stats.get_hidden_gems(),

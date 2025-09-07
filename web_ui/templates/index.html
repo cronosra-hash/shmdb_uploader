@@ -1,10 +1,19 @@
+{% import "news_macros.html" as news %}
+
 {% extends "base.html" %}
 
 {% block title %}SHMDB Dashboard{% endblock %}
 {% block header %}Welcome to SHMDB{% endblock %}
 {% block subheader %}<h2>Choose an Action</h2>{% endblock %}
 
+
+
 {% block content %}
+<div>
+  {% import "news_macros.html" as news %}
+  {{ news.render_news_panel(articles) }}
+</div>
+<pre>{{ articles | length }}</pre>
 <div class="page-wrapper">
   <a href="{{ url_for('uploader') }}" class="btn btn-primary">Go to Uploader</a>
 </div>
