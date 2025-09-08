@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}SHMDB Dashboard{% endblock %}
+{% block header %}Welcome to SHMDB{% endblock %}
+{% block subheader %}<h2>Statistics</h2>{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <a href="{{ url_for('read_root') }}" class="back-button">← Back to Index</a>
+    <div class="grid-container">
+        {% include "partials/stats/_active_release_years.html" %}
+        {% include "partials/stats/_hidden_gems.html" %}
+        {% include "partials/stats/_most_reviewed_titles.html" %}
+        {% include "partials/stats/_popular_genres.html" %}
+        {% include "partials/stats/_prolific_actors.html" %}
+        {% include "partials/stats/_top_rated_actors.html" %}
+        {% include "partials/stats/_top_rated_movies.html" %}
+        {% include "partials/stats/_trending_titles.html" %}
+    </div>
+{% endblock %}

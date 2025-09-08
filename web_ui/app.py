@@ -73,6 +73,9 @@ async def title_detail(request: Request, title_id: int):
 async def index(request: Request):
     return templates.TemplateResponse("index.html", get_stats_context(request))
 
+@router.get("/statistics", response_class=HTMLResponse, name="statistics")
+async def statistics(request: Request):
+    return templates.TemplateResponse("statistics.html", get_stats_context(request))
 
 @router.get("/uploader", response_class=HTMLResponse, name="uploader")
 async def uploader(request: Request):
