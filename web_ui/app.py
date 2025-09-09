@@ -16,9 +16,9 @@ from fastapi.templating import Jinja2Templates
 from config.settings import TMDB_API_KEY
 from db.connection import get_connection
 from uploader.movie_uploader import insert_or_update_movie_data
-from uploader.tv_uploader import insert_or_update_series_data
+from uploader.tv_uploader import insert_or_update_series_data, sync_series_episodes, sync_series_seasons
 from tmdb.movie_api import get_movie_data
-from tmdb.tv_api import fetch_series
+from tmdb.tv_api import fetch_series, fetch_all_episodes
 from services import stats
 from services.freshness import get_freshness_summary  # or wherever you define it
 from services.titles import get_title_by_id
@@ -467,9 +467,9 @@ async def upload(request: Request, tmdb_id: int, media_type: str):
             "title": title,
             "content_id": content_id,
             "media_type": media_type,
-        },
-        message="Upload complete",
-        changes=changes,
+            "upload_status": "Upload complete",  # optional
+            "raw_changes": changes,              # optional
+        }
     )
 
 
@@ -491,17 +491,41 @@ def process_media_upload(conn, tmdb_id, media_type):
     if media_type == "movie":
         movie_data = get_movie_data(tmdb_id)
         insert_or_update_movie_data(conn, movie_data, media_type)
-        return movie_data[
-            "id"
-        ], f"✅ Movie '{movie_data.get('title')}' processed successfully."
+        print(f"🎬 Movie '{movie_data.get('title')}' synced (id={movie_data['id']})")
+        return movie_data["id"], f"✅ Movie '{movie_data.get('title')}' processed successfully."
 
     elif media_type == "tv":
         series_data = fetch_series(tmdb_id)
-        insert_or_update_series_data(conn, series_data, TMDB_API_KEY)
-        return series_data[
-            "id"
-        ], f"✅ TV Series '{series_data.get('name')}' processed successfully."
+        series_id = series_data.get("id")
+        series_name = series_data.get("name")
 
+        print(f"📺 Starting sync for TV Series '{series_name}' (id={series_id})")
+
+        # ✅ Insert/update series first to satisfy foreign key constraints
+        insert_or_update_series_data(conn, series_data, TMDB_API_KEY)
+
+        # 🔄 Now insert seasons
+        with conn.cursor() as cur:
+            sync_series_seasons(cur, series_data)
+
+        # 🔄 Fetch and attach episodes
+        episodes = fetch_all_episodes(series_id)
+        if not episodes:
+            print(f"⚠️ No episodes found for series_id={series_id}")
+        else:
+            print(f"📦 {len(episodes)} episodes fetched for series_id={series_id}")
+        series_data["episodes"] = episodes
+
+        # 🔄 Sync episodes
+        with conn.cursor() as cur:
+            sync_series_episodes(cur, series_id, series_data)
+
+        conn.commit()  # ✅ Ensure inserts are persisted
+
+        print(f"✅ TV Series '{series_name}' synced successfully")
+        return series_id, f"✅ TV Series '{series_name}' processed successfully."
+
+    print(f"❌ Unsupported media type: {media_type}")
     return None, "❌ Invalid media type selected."
 
 

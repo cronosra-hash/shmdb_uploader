@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from db.logger import log_update
 from utils import parse_date
 from utils.logging import safe_json_context
@@ -369,6 +369,8 @@ def insert_or_update_series_data(conn, series, tmdb_api_key):
             insert_series_companies(cur, series_id, series)
             insert_series_languages(cur, series_id, series)
             insert_series_countries(cur, series_id, series)
+            sync_series_seasons(cur, series)
+            sync_series_episodes(cur, series_id, series)
 
         conn.commit()
         print(f"✅ Series ID {series_id} processed successfully.")
@@ -530,51 +532,56 @@ def insert_series_genres(cur, series_id, series):
         genre_name = genre.get("name")
 
         if not genre_id or not genre_name:
+            print(f"⚠️ Skipping genre with missing ID or name: {genre}")
             continue
 
+        # Ensure genre exists in the genres table
         cur.execute(
             """
             INSERT INTO genres (genre_id, genre_name)
             VALUES (%s, %s)
             ON CONFLICT (genre_id) DO NOTHING;
-        """,
+            """,
             (genre_id, genre_name),
         )
 
+        # Link genre to series if not already linked
         cur.execute(
             """
-            SELECT 1 FROM series_genres
-            WHERE series_id = %s AND genre_id = %s;
-        """,
+            INSERT INTO series_genres (series_id, genre_id)
+            VALUES (%s, %s)
+            ON CONFLICT DO NOTHING;
+            """,
             (series_id, genre_id),
         )
 
-        if not cur.fetchone():
-            context = json.dumps(
-                {
-                    "action": "link",
-                    "entity": "series_genre",
-                    "genre_name": genre_name,
-                    "source": "genre_link_pipeline",
-                    "timestamp": datetime.utcnow().isoformat(),
-                }
-            )
+        if cur.rowcount > 0:
+            # Log only if the link was newly created
+            context = json.dumps({
+                "action": "link",
+                "entity": "series_genre",
+                "genre_name": genre_name,
+                "source": "genre_link_pipeline",
+                "timestamp": datetime.utcnow().isoformat(),
+            })
 
-            log_update(
-                cur,
-                content_id=series_id,
-                content_title=series["name"],
-                content_type="tv",
-                update_type="genre_added",
-                field_name="genre",
-                previous_value=None,
-                current_value=genre_name,
-                context=context,
-                source="backend_script",
-                timestamp=datetime.utcnow(),
-            )
-
-            print(f"📺 Genre '{genre_name}' linked to series '{series['name']}'")
+            try:
+                log_update(
+                    cur,
+                    content_id=series_id,
+                    content_title=series["name"],
+                    content_type="tv",
+                    update_type="genre_added",
+                    field_name="genre",
+                    previous_value=None,
+                    current_value=genre_name,
+                    context=context,
+                    source="backend_script",
+                    timestamp=datetime.utcnow(),
+                )
+                print(f"📺 Genre '{genre_name}' linked to series '{series['name']}'")
+            except Exception as e:
+                print(f"❌ Failed to log genre link for '{genre_name}': {e}")
 
 
 def insert_series_companies(cur, series_id, series):
@@ -735,3 +742,305 @@ def insert_series_countries(cur, series_id, series):
             )
 
             print(f"📺 Country '{country_code}' linked to series '{series['name']}'")
+
+
+def safe_json(val):
+    if isinstance(val, (datetime, date)):
+        return val.isoformat()
+    return val
+
+def normalize(val):
+    if isinstance(val, str):
+        return val.strip() or None
+    if isinstance(val, float):
+        return round(val, 3)
+    return val or None
+
+def sync_series_episodes(cur, series_id, series):
+    print(f"🚨 Syncing episodes for series_id={series_id}, name={series.get('name')}")
+    episodes = series.get("episodes", [])
+    print(f"📦 Found {len(episodes)} episodes to sync")
+
+    inserted, updated = 0, 0
+
+    for episode in episodes:
+        episode_number = episode.get("episode_number")
+        season_id = episode.get("season_id")
+
+        if episode_number is None or season_id is None:
+            print(f"⚠️ Skipping episode with missing episode_number or season_id")
+            continue
+
+        print(f"🔍 Checking episode {episode_number} in season_id={season_id} for series_id={series_id}")
+
+        cur.execute(
+            """
+            SELECT episode_id, episode_name, overview, air_date, 
+                   runtime, still_path, vote_average, vote_count
+            FROM series_episodes
+            WHERE series_id = %s AND season_id = %s AND episode_number = %s
+            """,
+            (series_id, season_id, episode_number),
+        )
+        existing = cur.fetchone()
+        print(f"🧾 Fetched existing episode {episode_number}, found={bool(existing)}")
+
+        parsed_air_date = parse_date(episode.get("air_date"))
+
+        fields = {
+            "episode_name": episode.get("name"),
+            "overview": episode.get("overview"),
+            "air_date": parsed_air_date,
+            "runtime": episode.get("runtime"),
+            "still_path": episode.get("still_path"),
+            "vote_average": episode.get("vote_average"),
+            "vote_count": episode.get("vote_count"),
+        }
+
+        if existing:
+            column_names = [
+                "episode_id", "episode_name", "overview", "air_date",
+                "runtime", "still_path", "vote_average", "vote_count"
+            ]
+            existing_data = dict(zip(column_names, existing))
+
+            updates = {}
+            for field, new_value in fields.items():
+                old_value = existing_data.get(field)
+                if normalize(new_value) != normalize(old_value):
+                    updates[field] = (old_value, new_value)
+
+            if updates:
+                set_clause = ", ".join([f"{field} = %s" for field in updates])
+                values = [new for _, new in updates.values()]
+                values.extend([series_id, season_id, episode_number])
+
+                print(f"🔍 Preparing to update episode {episode_number} in season {season_id}")
+                for field, (old, new) in updates.items():
+                    print(f"   ↪ {field}: '{old}' → '{new}'")
+
+                cur.execute(
+                    f"""
+                    UPDATE series_episodes
+                    SET {set_clause}, last_updated = CURRENT_TIMESTAMP
+                    WHERE series_id = %s AND season_id = %s AND episode_number = %s
+                    """,
+                    values,
+                )
+                print(f"🔧 Updated episode {episode_number}, fields: {list(updates.keys())}")
+
+                for field, (old, new) in updates.items():
+                    try:
+                        context = json.dumps({
+                            "action": "update",
+                            "entity": "series_episode",
+                            "episode_number": episode_number,
+                            "field": field,
+                            "old": safe_json(old),
+                            "new": safe_json(new),
+                            "source": "episode_sync_pipeline",
+                            "timestamp": datetime.utcnow().isoformat(),
+                        })
+
+                        log_update(
+                            cur,
+                            content_id=series_id,
+                            content_title=series["name"],
+                            content_type="tv",
+                            update_type="episode_updated",
+                            field_name=field,
+                            previous_value=old,
+                            current_value=new,
+                            context=context,
+                            source="backend_script",
+                            timestamp=datetime.utcnow().isoformat(),
+                        )
+                    except Exception as e:
+                        print(f"❌ Failed to log update for field '{field}': {e}")
+
+                updated += 1
+                print(f"🔄 Episode {episode_number} updated for series '{series['name']}'")
+
+        else:
+            try:
+                cur.execute(
+                    """
+                    INSERT INTO series_episodes (
+                        episode_id, season_id, series_id, episode_number, episode_name,
+                        overview, air_date, runtime, still_path, vote_average, vote_count, last_updated
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                    """,
+                    (
+                        episode.get("id"),
+                        season_id,
+                        series_id,
+                        episode_number,
+                        fields["episode_name"],
+                        fields["overview"],
+                        fields["air_date"],
+                        fields["runtime"],
+                        fields["still_path"],
+                        fields["vote_average"],
+                        fields["vote_count"],
+                    ),
+                )
+                print(f"📥 Inserted episode {episode_number} into season {season_id}")
+
+                context = json.dumps({
+                    "action": "insert",
+                    "entity": "series_episode",
+                    "episode_number": episode_number,
+                    "source": "episode_sync_pipeline",
+                    "timestamp": datetime.utcnow().isoformat(),
+                })
+
+                log_update(
+                    cur,
+                    content_id=series_id,
+                    content_title=series["name"],
+                    content_type="tv",
+                    update_type="episode_added",
+                    field_name="episode",
+                    previous_value=None,
+                    current_value=episode_number,
+                    context=context,
+                    source="backend_script",
+                    timestamp=datetime.utcnow().isoformat(),
+                )
+
+                inserted += 1
+                print(f"📺 Episode {episode_number} inserted for series '{series['name']}'")
+
+            except Exception as e:
+                print(f"❌ Failed to insert episode {episode_number}: {e}")
+
+    print(f"✅ Episode sync complete: {inserted} inserted, {updated} updated")
+
+
+def sync_series_seasons(cur, series_data):
+    series_id = series_data["id"]
+    seasons = series_data.get("seasons", [])
+    print(f"🚨 Syncing seasons for series_id={series_id}, name={series_data.get('name')}")
+
+    for season in seasons:
+        season_id = season.get("id")
+        season_number = season.get("season_number")
+        season_name = season.get("name")
+        overview = season.get("overview")
+        air_date = parse_date(season.get("air_date"))
+        poster_path = season.get("poster_path")
+
+        if not season_id:
+            print(f"⚠️ Skipping season with missing ID: {season}")
+            continue
+
+        # Check if season exists
+        cur.execute(
+            """
+            SELECT season_name, overview, air_date, poster_path
+            FROM series_seasons
+            WHERE season_id = %s
+            """,
+            (season_id,)
+        )
+        existing = cur.fetchone()
+
+        fields = {
+            "season_name": season_name,
+            "overview": overview,
+            "air_date": air_date,
+            "poster_path": poster_path,
+        }
+
+        if existing:
+            column_names = ["season_name", "overview", "air_date", "poster_path"]
+            existing_data = dict(zip(column_names, existing))
+
+            updates = {}
+            for field, new_value in fields.items():
+                old_value = existing_data.get(field)
+                if new_value != old_value:
+                    updates[field] = (old_value, new_value)
+
+            if updates:
+                set_clause = ", ".join([f"{field} = %s" for field in updates])
+                values = [new for _, new in updates.values()]
+                values.append(season_id)
+
+                cur.execute(
+                    f"""
+                    UPDATE series_seasons
+                    SET {set_clause}, last_updated = CURRENT_TIMESTAMP
+                    WHERE season_id = %s
+                    """,
+                    values
+                )
+                print(f"🔧 Season {season_number} updated: {list(updates.keys())}")
+
+                for field, (old, new) in updates.items():
+                    try:
+                        context = json.dumps({
+                            "action": "update",
+                            "entity": "series_season",
+                            "season_number": season_number,
+                            "field": field,
+                            "old": safe_json(old),
+                            "new": safe_json(new),
+                            "source": "season_sync_pipeline",
+                            "timestamp": datetime.utcnow().isoformat(),
+                        })
+
+                        log_update(
+                            cur,
+                            content_id=series_id,
+                            content_title=series_data["name"],
+                            content_type="tv",
+                            update_type="season_updated",
+                            field_name=field,
+                            previous_value=old,
+                            current_value=new,
+                            context=context,
+                            source="backend_script",
+                            timestamp=datetime.utcnow().isoformat(),
+                        )
+                    except Exception as e:
+                        print(f"❌ Failed to log season update for field '{field}': {e}")
+        else:
+            # Insert new season
+            cur.execute(
+                """
+                INSERT INTO series_seasons (
+                    season_id, series_id, season_number, season_name,
+                    overview, air_date, poster_path, last_updated
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                """,
+                (season_id, series_id, season_number, season_name, overview, air_date, poster_path)
+            )
+            print(f"📘 Season {season_number} inserted")
+
+            try:
+                context = json.dumps({
+                    "action": "insert",
+                    "entity": "series_season",
+                    "season_number": season_number,
+                    "source": "season_sync_pipeline",
+                    "timestamp": datetime.utcnow().isoformat(),
+                })
+
+                log_update(
+                    cur,
+                    content_id=series_id,
+                    content_title=series_data["name"],
+                    content_type="tv",
+                    update_type="season_added",
+                    field_name="season",
+                    previous_value=None,
+                    current_value=season_number,
+                    context=context,
+                    source="backend_script",
+                    timestamp=datetime.utcnow().isoformat(),
+                )
+            except Exception as e:
+                print(f"❌ Failed to log season insert for season {season_number}: {e}")
