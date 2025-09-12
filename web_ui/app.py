@@ -26,6 +26,7 @@ from services.diagnostics import wrap_query
 from web_ui.filters import datetimeformat, ago, to_timezone, timestamp_color
 from routes import news
 from services.news_fetcher import get_all_news
+from services.stats import get_new_releases
 
 # from services.reviews import get_reviews_for_title
 from services.actors import get_cast_for_title
@@ -89,11 +90,15 @@ def news_page(request: Request):
         "articles": articles
     })
 
+
 def get_stats_context(request: Request):
     articles = get_all_news(api_key="pub_000738d4a1274d798638038b9633580c")
+    new_releases = get_new_releases()
+
     return {
         "request": request,
         "articles": articles,
+        "new_releases": new_releases,
         "stats": {
             "active_release_years": stats.get_active_release_years(),
             "hidden_gems": stats.get_hidden_gems(),
@@ -106,6 +111,7 @@ def get_stats_context(request: Request):
             "freshness": get_freshness_summary(),
         },
     }
+
 
 
 # ─── Register Router ─────────────────────────────────────────────────────────

@@ -15,7 +15,22 @@
   {% import "news_macros.html" as news %}
   {{ news.render_news_panel(articles) }}
 </div>
-<div>
-  Reviews
+<div class="panel neon-pulse">
+  <h2>🎬 New Releases – September 2025</h2>
+  <table class="release-table">
+    <thead>
+      <tr><th>Title</th><th>Date</th><th>Genre</th><th>Source</th></tr>
+    </thead>
+    <tbody>
+      {% for release in new_releases %}
+      <tr>
+        <td><a href="{{ release.source_url }}" target="_blank">{{ release.title }}</a></td>
+        <td>{{ release.release_date }}</td>
+        <td>{{ release.genre }}</td>
+        <td>{{ release.source }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 {% endblock %}
