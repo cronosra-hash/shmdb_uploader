@@ -4,10 +4,10 @@ from dotenv import load_dotenv
 # Load base .env to determine environment
 load_dotenv()
 
-ENV = os.getenv("ENV", "development").lower()
+APP_ENV = os.getenv("APP_ENV", "development").lower()
 
 # Load environment-specific .env file
-if ENV == "production":
+if APP_ENV == "production":
     load_dotenv(".env.production", override=True)
 else:
     load_dotenv(".env.development", override=True)

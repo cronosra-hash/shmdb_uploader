@@ -27,6 +27,7 @@ from web_ui.filters import datetimeformat, ago, to_timezone, timestamp_color
 from routes import news
 from services.news_fetcher import get_all_news
 from services.stats import get_new_releases
+from dotenv import load_dotenv
 
 # from services.reviews import get_reviews_for_title
 from services.actors import get_cast_for_title
@@ -34,6 +35,7 @@ from services.actors import get_cast_for_title
 # ─── Environment Setup ───────────────────────────────────────────────────────
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 load_dotenv()
+APP_ENV = os.getenv("APP_ENV", "unknown")
 
 # ─── FastAPI App Initialization ──────────────────────────────────────────────
 app = FastAPI()
@@ -72,7 +74,8 @@ async def title_detail(request: Request, title_id: int):
 
 @router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", get_stats_context(request))
+    return templates.TemplateResponse("index.html", {**get_stats_context(request), "app_env": APP_ENV})
+
 
 @router.get("/statistics", response_class=HTMLResponse, name="statistics")
 async def statistics(request: Request):

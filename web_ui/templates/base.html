@@ -25,7 +25,9 @@
             <img src="/static/shmdb-logo.png" alt="SH Movie Database Logo" class="logo-flicker">
         </div>
         <div style="text-align: center; margin-bottom: 20px;">
-            <h1>{% block header %}SHMDB{% endblock %}</h1>
+            <h1>{% block header %}SHMDB{% endblock %}
+                <div class="env-tag">{{ app_env | upper }}</div>
+            </h1>
             {% block subheader %}{% endblock %}
         </div>
 
