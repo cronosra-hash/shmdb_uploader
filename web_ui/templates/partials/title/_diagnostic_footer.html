@@ -1,4 +1,4 @@
-<div class="text-xs text-neon-yellow mt-4 space-y-1">
+<div class="text-xs mt-4 space-y-1">
   {% if diagnostics.duration_ms %}
   <p>⏱️ <span class="font-semibold">Query Time:</span> {{ diagnostics.duration_ms }} ms</p>
   {% endif %}
@@ -13,7 +13,7 @@
   {% if diagnostics.volatility %}
   <p>📊 <span class="font-semibold">Volatility:</span>
     {% for field, score in diagnostics.volatility.items() %}
-    <span class="inline-block bg-neon-pink text-black px-1 rounded-sm mr-1">{{ field }}: {{ score }}</span>
+    <span class="inline-block text-black px-1 rounded-sm mr-1">{{ field }}: {{ score }}</span>
     {% endfor %}
   </p>
   {% endif %}

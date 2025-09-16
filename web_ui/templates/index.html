@@ -8,14 +8,14 @@
 
 {% block content %}
 <div class="page-wrapper">
-  <a href="{{ url_for('uploader') }}" class="neon-button flicker">Go to Uploader</a>
-  <a href="{{ url_for('statistics') }}" class="neon-button flicker">Go to Statistics</a>
+  <a href="{{ url_for('uploader') }}" class="">Go to Uploader</a>
+  <a href="{{ url_for('statistics') }}" class="">Go to Statistics</a>
 </div>
 <div>
   {% import "news_macros.html" as news %}
   {{ news.render_news_panel(articles) }}
 </div>
-<div class="panel neon-pulse">
+<div class="panel">
   <h2>🎬 New Releases – September 2025</h2>
   <table class="release-table">
     <thead>

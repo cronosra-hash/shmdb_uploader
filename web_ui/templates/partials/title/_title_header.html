@@ -1,4 +1,4 @@
-<div class="card fadeInUp p-6 bg-dark-glow rounded-lg shadow-neon">
+<div class="card fadeInUp p-6 bg-dark-glow rounded-lg">
   <div class="flex flex-col md:flex-row gap-6 items-start">
     
     <!-- Poster -->
@@ -6,7 +6,7 @@
     <div class="flex-shrink-0">
       <img src="https://image.tmdb.org/t/p/w300{{ title.poster_path }}"
            alt="Poster for {{ title.title }}"
-           class="rounded-lg shadow-neon h-auto max-h-96 w-auto" />
+           class="rounded-lg h-auto max-h-96 w-auto" />
     </div>
     {% endif %}
 
@@ -14,20 +14,20 @@
     <div class="flex-grow space-y-4">
       <!-- Title & Year -->
       <div class="flex items-center justify-between">
-        <h2 class="text-neon-cyan text-3xl font-bold">{{ title.title }}</h2>
-        <span class="text-sm text-neon-pink">📅 {{ title.release_year }}</span>
+        <h2 class="text-3xl font-bold">{{ title.title }}</h2>
+        <span class="text-sm">📅 {{ title.release_year }}</span>
       </div>
 
       <!-- Runtime & Genres -->
-      <div class="flex flex-wrap gap-3 text-sm text-neon-pink">
+      <div class="flex flex-wrap gap-3 text-sm">
         <span>⏱️ {{ title.runtime }} min</span>
         {% for genre in title.genres %}
-          <span class="badge badge-neon">{{ genre }}</span>
+          <span class="badge">{{ genre }}</span>
         {% endfor %}
       </div>
 
       <!-- Ratings -->
-      <div class="flex items-center gap-4 text-neon-green text-sm">
+      <div class="flex items-center gap-4 text-sm">
         {% if title.vote_average is defined and title.vote_average is not none %}
           <span>⭐ {{ title.vote_average | round(1) }}</span>
         {% else %}
