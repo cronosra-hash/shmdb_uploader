@@ -71,18 +71,14 @@ async def title_detail(request: Request, title_id: int):
         },
     )
 
-
-
-
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {
         **get_stats_context(request),
         "app_env": APP_ENV,
-        "app_version": "1.4.2",
+        "app_version": "0.1.0",
         "now": datetime.now()
     })
-
 
 @router.get("/statistics", response_class=HTMLResponse, name="statistics")
 async def statistics(request: Request):
@@ -101,12 +97,17 @@ def news_page(request: Request):
     })
 
 
+from datetime import datetime
+
 def get_stats_context(request: Request):
     articles = get_all_news(api_key="pub_000738d4a1274d798638038b9633580c")
     new_releases = get_new_releases()
 
     return {
         "request": request,
+        "now": datetime.now(),
+        "app_env": APP_ENV,
+        "app_version": "0.1.0",
         "articles": articles,
         "new_releases": new_releases,
         "stats": {
@@ -121,7 +122,6 @@ def get_stats_context(request: Request):
             "freshness": get_freshness_summary(),
         },
     }
-
 
 
 # ─── Register Router ─────────────────────────────────────────────────────────
