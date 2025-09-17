@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 # ─── Third-Party Imports ─────────────────────────────────────────────────────
 import requests
+from typing import List, Dict
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, APIRouter
 from fastapi.responses import HTMLResponse
@@ -27,7 +28,6 @@ from web_ui.filters import datetimeformat, ago, to_timezone, timestamp_color
 from routes import news
 from services.news_fetcher import get_all_news
 from services.stats import get_new_releases
-from dotenv import load_dotenv
 
 # from services.reviews import get_reviews_for_title
 from services.actors import get_cast_for_title
@@ -73,11 +73,15 @@ async def title_detail(request: Request, title_id: int):
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
+    now = datetime.now()  # ← this is the fix
     return templates.TemplateResponse("index.html", {
         **get_stats_context(request),
         "app_env": APP_ENV,
         "app_version": "0.1.0",
-        "now": datetime.now()
+        "now": now,
+        "new_releases": get_new_releases(),
+        "cinema_releases": get_cinema_releases(month=now.month, year=now.year),
+        "tv_releases": get_tv_releases(month=now.month, year=now.year),
     })
 
 @router.get("/statistics", response_class=HTMLResponse, name="statistics")
@@ -96,8 +100,6 @@ def news_page(request: Request):
         "articles": articles
     })
 
-
-from datetime import datetime
 
 def get_stats_context(request: Request):
     articles = get_all_news(api_key="pub_000738d4a1274d798638038b9633580c")
@@ -692,3 +694,90 @@ def search_person_tmdb(name):
         conn.close()
 
     return people
+
+def get_cinema_releases(month: int = None, year: int = None) -> List[Dict]:
+    from datetime import datetime
+    now = datetime.now()
+    month = month or now.month
+    year = year or now.year
+
+    # Example hardcoded data for September 2025
+    if month == 9 and year == 2025:
+        return [
+            {
+                "title": "Highest 2 Lowest",
+                "release_date": "2025-09-05",
+                "genre": "Thriller / Drama",
+                "source": "Radio Times",
+                "source_url": "https://www.radiotimes.com/movies/best-films-uk-september-2025/"
+            },
+            {
+                "title": "The Conjuring: Last Rites",
+                "release_date": "2025-09-05",
+                "genre": "Horror",
+                "source": "Radio Times",
+                "source_url": "https://www.radiotimes.com/movies/best-films-uk-september-2025/"
+            },
+            {
+                "title": "Downton Abbey: The Grand Finale",
+                "release_date": "2025-09-19",
+                "genre": "Historical Drama",
+                "source": "Screen Daily",
+                "source_url": "https://www.screendaily.com/news/uk-ireland-film-cinema-release-dates-latest-updates-for-2025/5200243.article"
+            },
+            {
+                "title": "A Big Bold Beautiful Journey",
+                "release_date": "2025-09-19",
+                "genre": "Fantasy / Romance",
+                "source": "Screen Daily",
+                "source_url": "https://www.screendaily.com/news/uk-ireland-film-cinema-release-dates-latest-updates-for-2025/5200243.article"
+            },
+            {
+                "title": "Steve",
+                "release_date": "2025-09-27",
+                "genre": "Drama",
+                "source": "Radio Times",
+                "source_url": "https://www.radiotimes.com/movies/best-films-uk-september-2025/"
+            },
+            {
+                "title": "One Battle After Another",
+                "release_date": "2025-09-26",
+                "genre": "Thriller",
+                "source": "Screen Daily",
+                "source_url": "https://www.screendaily.com/news/uk-ireland-film-cinema-release-dates-latest-updates-for-2025/5200243.article"
+            },
+            {
+                "title": "Materialists",
+                "release_date": "2025-09-12",
+                "genre": "Romantic Comedy",
+                "source": "Radio Times",
+                "source_url": "https://www.radiotimes.com/movies/best-films-uk-september-2025/"
+            }
+        ]
+
+def get_tv_releases(month: int = None, year: int = None) -> List[Dict]:
+        from datetime import datetime
+        now = datetime.now()
+        month = month or now.month
+        year = year or now.year
+
+        # Example hardcoded data for September 2025
+        if month == 9 and year == 2025:
+            return [
+                {
+                    "title": "Doctor Who: Genesis Protocol",
+                    "release_date": "2025-09-21",
+                    "platform": "BBC One",
+                    "genre": "Sci-Fi / Drama",
+                    "source": "Radio Times",
+                    "source_url": "https://www.radiotimes.com/tv/tv-listings/"
+                },
+                {
+                    "title": "The Crown: Final Season",
+                    "release_date": "2025-09-28",
+                    "platform": "Netflix",
+                    "genre": "Historical Drama",
+                    "source": "Radio Times",
+                    "source_url": "https://www.radiotimes.com/streaming/netflix/"
+                }
+            ]

@@ -1,26 +1,16 @@
 {% extends "base.html" %}
 {% import "news_macros.html" as news %}
+{% from "macros/panels.html" import render_cinema_panel, render_tv_panel %}
+
+{{ render_cinema_panel(cinema_releases) }}
+{{ render_tv_panel(tv_releases) }}
+
 
 {% block content %}
+  {{ render_cinema_panel(cinema_releases, now) }}
+  {{ render_tv_panel(tv_releases, now) }}
+
   <div class="panel">
-    <h2>🎬 New Releases – September 2025</h2>
-    <table class="release-table">
-      <thead>
-        <tr><th>Title</th><th>Date</th><th>Genre</th><th>Source</th></tr>
-      </thead>
-      <tbody>
-        {% for release in new_releases %}
-        <tr>
-          <td><a href="{{ release.source_url }}" target="_blank">{{ release.title }}</a></td>
-          <td>{{ release.release_date }}</td>
-          <td>{{ release.genre }}</td>
-          <td>{{ release.source }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-    <div class="panel">
     <h2>📰 Latest News</h2>
     {{ news.render_news_panel(articles) }}
   </div>

@@ -1,0 +1,51 @@
+{% macro render_cinema_panel(releases, now) %}
+  <div class="panel cinema-panel">
+    <h2>🎟️ Cinema Releases – {{ now.strftime('%B %Y') }}</h2>
+    {% if releases %}
+      <table class="release-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Date</th>
+            <th>Genre</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for release in releases %}
+          <tr>
+            <td><a href="{{ release.source_url }}" target="_blank">{{ release.title }}</a></td>
+            <td>{{ release.release_date }}</td>
+            <td>{{ release.genre }}</td>
+            <td>{{ release.source }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="news-empty">
+        🚫 No cinema releases found for this month.<br>
+        <button onclick="location.reload()">🔄 Retry</button>
+      </div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{% macro render_tv_panel(shows, now) %}
+  <div class="panel tv-panel">
+    <h2>📺 TV Releases – {{ now.strftime('%B %Y') }}</h2>
+  <table class="release-table">
+    <thead><tr><th>Title</th><th>Date</th><th>Platform</th><th>Genre</th></tr></thead>
+    <tbody>
+      {% for show in shows %}
+      <tr>
+        <td><a href="{{ show.source_url }}" target="_blank">{{ show.title }}</a></td>
+        <td>{{ show.release_date }}</td>
+        <td>{{ show.platform }}</td>
+        <td>{{ show.genre }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}

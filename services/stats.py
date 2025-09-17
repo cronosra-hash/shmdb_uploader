@@ -1,6 +1,5 @@
 import psycopg2.extras
 from pathlib import Path
-from sqlalchemy import text
 from db.connection import get_connection
 
 QUERIES_DIR = Path(__file__).parent.parent / "queries"

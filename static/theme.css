@@ -318,3 +318,64 @@ body {
   font-family: monospace;
   color: #555;
 }
+
+/* ──────────────────────────────────────────────── */
+/* 🎟️ CINEMA RELEASES PANEL */
+/* ──────────────────────────────────────────────── */
+
+.cinema-panel {
+  margin-top: 2rem;
+}
+
+.cinema-panel h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #2A2A2A;
+  padding-bottom: 0.5rem;
+}
+
+.release-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.release-table th,
+.release-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid #2A2A2A;
+  text-align: left;
+}
+
+.release-table th {
+  font-weight: 600;
+  color: #EAEAEA;
+  background-color: #1A1A1A;
+}
+
+.release-table td {
+  color: #CCCCCC;
+}
+
+.release-table a {
+  color: #00B2FF;
+  text-decoration: none;
+}
+
+.release-table a:hover {
+  text-decoration: underline;
+}
+
+/* ──────────────────────────────────────────────── */
+/* 📺 TV RELEASES PANEL */
+/* ──────────────────────────────────────────────── */
+
+.tv-panel {
+  margin-top: 2rem;
+}
+
+.tv-panel h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #2A2A2A;
+  padding-bottom: 0.5rem;
+}
