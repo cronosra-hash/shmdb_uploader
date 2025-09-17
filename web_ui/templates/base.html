@@ -1,38 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <title>{% block title %}SHMDB{% endblock %}</title>
-    <link rel="stylesheet" href="/static/animations.css">
-    <link rel="stylesheet" href="/static/base.css">
-    <link rel="stylesheet" href="/static/buttons.css">
-    <link rel="stylesheet" href="/static/cards.css">
-    <link rel="stylesheet" href="/static/components.css">
-    <link rel="stylesheet" href="/static/form.css">
-    <link rel="stylesheet" href="/static/layout.css">
-    <link rel="stylesheet" href="/static/media.css">
-    <link rel="stylesheet" href="/static/result.css">
-    <link rel="stylesheet" href="/static/typography.css">
-    <link rel="stylesheet" href="/static/variables.css">
-    <link rel="stylesheet" href="/static/news.css">
+  <meta charset="UTF-8">
+  <title>{% block title %}SHMDB{% endblock %}</title>
+
+  <!-- CSS Imports -->
+    <link rel="stylesheet" href="/static/theme.css">
+    <!-- <link rel="stylesheet" href="/static/theme_neon.css"> -->
     <link rel="icon" href="/static/favicon.ico">
 </head>
 
 <body>
-    <div class="page-wrapper">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <img src="/static/shmdb-logo.png" alt="SH Movie Database Logo" class="">
-        </div>
-        <div style="text-align: center; margin-bottom: 20px;">
-            <h1>{% block header %}SHMDB{% endblock %}
-                <div class="env-tag">{{ app_env | upper }}</div>
-            </h1>
-            {% block subheader %}{% endblock %}
-        </div>
+  <div class="page-wrapper">
 
-        {% block content %}{% endblock %}
+    <!-- 🔹 Top Bar -->
+<div class="top-bar">
+  <div class="branding">
+    <img src="/static/shmdb-logo.png" alt="SHMDB Logo" class="logo" />
+    <span class="site-name">SHMDB</span>
+    <div class="env-tag">{{ app_env | upper }}</div>
+  </div>
+
+  <div class="top-bar-right">
+    <form action="{{ url_for('search') }}" method="get" class="search-form">
+      <input type="text" name="query" placeholder="Search records..." class="search-box" />
+    </form>
+
+    <div class="dropdown">
+      <button class="dropdown-toggle">Menu ▾</button>
+      <div class="dropdown-content">
+        <a href="{{ url_for('uploader') }}">Uploader</a>
+        <a href="{{ url_for('statistics') }}">Statistics</a>
+        {% block extra_menu_items %}{% endblock %}
+      </div>
     </div>
-</body>
+  </div>
+</div>
 
+
+
+
+
+    <!-- 🔹 Page Header -->
+    <div class="page-header">
+      {% block subheader %}{% endblock %}
+    </div>
+
+    <!-- 🔹 Main Content -->
+    {% block content %}{% endblock %}
+
+  </div>
+</body>
 </html>
