@@ -72,9 +72,16 @@ async def title_detail(request: Request, title_id: int):
     )
 
 
-@router.get("/", response_class=HTMLResponse)
+
+
+@app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {**get_stats_context(request), "app_env": APP_ENV})
+    return templates.TemplateResponse("index.html", {
+        **get_stats_context(request),
+        "app_env": APP_ENV,
+        "app_version": "1.4.2",
+        "now": datetime.now()
+    })
 
 
 @router.get("/statistics", response_class=HTMLResponse, name="statistics")

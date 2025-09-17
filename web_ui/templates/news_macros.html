@@ -1,31 +1,27 @@
 {% macro render_news_panel(articles) %}
-<div class="panel news-panel">
-  <h2>🎬 Movie News</h2>
-  {% if articles %}
-  <ul class="news-list">
-    {% for article in articles %}
-    <li class="news-item">
-      <a href="{{ article.link or '#' }}" target="_blank" class="news-title">
-        {{ article.title or 'Untitled' }}
-      </a>
-      <span class="news-date">
-        {{ article.published.strftime('%Y-%m-%d') if article.published else 'Unknown Date' }}
-      </span>
-      <span class="news-source">
-        {{ article.source or 'Unknown Source' }}
-      </span>
-    </li>
-    {% endfor %}
-  </ul>
-  <p class="news-count">📰 Showing {{ articles|length }} articles</p>
-  {% else %}
-  <p class="news-empty">
-    🚫 No news available at the moment.<br>
-    <button onclick="location.reload()">🔄 Retry</button>
-  </p>
-  {% endif %}
-  <div class="news-footer">
-    <small>Last updated: {{ articles[0].published.strftime('%Y-%m-%d %H:%M') if articles }}</small>
-  </div>
+{% if articles %}
+<ul class="news-list">
+  {% for article in articles %}
+  <li class="news-item">
+    <a href="{{ article.link or '#' }}" target="_blank" class="news-title">
+      {{ article.title or 'Untitled' }}
+    </a>
+    <span class="news-meta">
+      {{ article.published.strftime('%Y-%m-%d') if article.published else 'Unknown Date' }} —
+      {{ article.source or 'Unknown Source' }}
+    </span>
+  </li>
+  {% endfor %}
+</ul>
+
+<p class="news-count">📰 Showing {{ articles|length }} articles</p>
+<div class="news-footer">
+  <small>Last updated: {{ articles[0].published.strftime('%Y-%m-%d %H:%M') if articles }}</small>
 </div>
+{% else %}
+<div class="news-empty">
+  🚫 No news available at the moment.<br>
+  <button onclick="location.reload()">🔄 Retry</button>
+</div>
+{% endif %}
 {% endmacro %}

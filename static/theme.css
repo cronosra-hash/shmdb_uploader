@@ -136,6 +136,109 @@ body {
   max-width: 960px;
 }
 
+.panel h2 {
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  border-bottom: 1px solid #2A2A2A;
+  padding-bottom: 0.5rem;
+}
+
+
+/* ──────────────────────────────────────────────── */
+/* 🎬 RELEASE TABLE */
+/* ──────────────────────────────────────────────── */
+
+.release-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.release-table th,
+.release-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid #2A2A2A;
+}
+
+.release-table a {
+  color: #00B2FF;
+  text-decoration: none;
+}
+
+.release-table a:hover {
+  text-decoration: underline;
+}
+
+
+/* ──────────────────────────────────────────────── */
+/* 📰 NEWS PANEL */
+/* ──────────────────────────────────────────────── */
+
+.news-panel {
+  margin-top: 2rem;
+}
+
+.news-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.news-item {
+  padding: 1rem 0;
+  border-bottom: 1px solid #2A2A2A;
+}
+
+.news-title {
+  font-weight: 600;
+  color: #00B2FF;
+  text-decoration: none;
+}
+
+.news-title:hover {
+  text-decoration: underline;
+}
+
+.news-meta {
+  display: block;
+  font-size: 0.85rem;
+  color: #A0A0A0;
+  margin-top: 0.25rem;
+}
+
+.news-count {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #A0A0A0;
+}
+
+.news-empty {
+  text-align: center;
+  color: #A0A0A0;
+  font-size: 0.95rem;
+  margin-top: 1rem;
+}
+
+.news-empty button {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  color: #EAEAEA;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.news-empty button:hover {
+  border-color: #00B2FF;
+  color: #00B2FF;
+}
+
+.news-footer {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  color: #A0A0A0;
+  text-align: right;
+}
 
 /* ──────────────────────────────────────────────── */
 /* 🧪 LEGACY BUTTONS (Optional) */
@@ -160,4 +263,58 @@ body {
 .btn:hover {
   border-color: #00B2FF;
   color: #00B2FF;
+}
+
+/* ──────────────────────────────────────────────── */
+/* 🦶 SITE FOOTER */
+/* ──────────────────────────────────────────────── */
+
+.site-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #1A1A1A;
+  border-top: 1px solid #2A2A2A;
+  font-size: 0.85rem;
+  color: #A0A0A0;
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.footer-brand {
+  font-weight: 600;
+  color: #EAEAEA;
+}
+
+.footer-env {
+  background-color: #FFB84D;
+  color: #0F0F0F;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.footer-right a {
+  color: #A0A0A0;
+  text-decoration: none;
+}
+
+.footer-right a:hover {
+  color: #00B2FF;
+}
+
+.footer-version {
+  font-family: monospace;
+  color: #555;
 }

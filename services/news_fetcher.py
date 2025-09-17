@@ -13,7 +13,7 @@ class NewsArticle(BaseModel):
     source: str
 
 
-def parse_feed(url: str, source: str, limit: int = 10) -> List[NewsArticle]:
+def parse_feed(url: str, source: str, limit: int = 5) -> List[NewsArticle]:
     try:
         feed = feedparser.parse(url)
         return [
@@ -38,7 +38,7 @@ def fetch_screenrant_news() -> List[NewsArticle]:
     return parse_feed("https://screenrant.com/feed/", "Screen Rant")
 
 
-def fetch_newsdata_io(api_key: Optional[str] = None, limit: int = 10) -> List[NewsArticle]:
+def fetch_newsdata_io(api_key: Optional[str] = None, limit: int = 5) -> List[NewsArticle]:
     if not api_key:
         print("NewsData.io API key missing")
         return []
