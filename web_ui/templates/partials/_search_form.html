@@ -1,9 +1,11 @@
-<form method="post" action="/search" class="">
-  <input type="text" name="name" placeholder="Search for movies or TV shows" class="">
-  <button type="submit" class="">Search</button>
-</form>
+<div class="search-forms">
+  <form method="post" action="/search" class="search-form">
+    <input type="text" name="name" placeholder="Search for movies or TV shows" required>
+    <button type="submit">Search</button>
+  </form>
 
-<form method="post" action="/search_person" class="">
-  <input type="text" name="person_name" placeholder="Search for a person" class="" required>
-  <button type="submit" class="">Search</button> 
-</form>
+  <form method="post" action="/search_person" class="search-form">
+    <input type="text" name="person_name" placeholder="Search for a person" required>
+    <button type="submit">Search</button>
+  </form>
+</div>

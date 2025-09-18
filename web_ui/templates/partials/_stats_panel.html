@@ -1,50 +1,41 @@
-<div class="stats-panel grid-container fadeInUp">
-  <!-- 🎬 Volume -->
-  <div class="card">
-    <h4 class="">🎬 Volume</h4>
-    <ul>
-      <li>Movies: <strong>{{ stats.movie_count }}</strong></li>
-      <li>TV Series: <strong>{{ stats.series_count }}</strong></li>
-    </ul>
-  </div>
+  <div class="stats-horizontal fadeInUp">
+    
+    <!-- 🎬 Volume -->
+    <div class="stat-block">
+      <h4>🎬 Volume</h4>
+      <p>Movies: <strong>{{ stats.movie_count }}</strong></p>
+      <p>TV Series: <strong>{{ stats.series_count }}</strong></p>
+    </div>
 
-  <!-- 📈 Updates -->
-  <div class="card">
-    <h4 class="">📈 Updates</h4>
-    <ul>
-      <li>Last: <span class="timestamp">{{ stats.last_update.strftime('%Y-%m-%d %H:%M:%S') if stats.last_update else 'N/A' }}</span></li>
-      <li>7-Day: <strong>{{ stats.recent_updates }}</strong></li>
-      <li>ID: <strong>{{ stats.most_updated_id }}</strong></li>
-    </ul>
-  </div>
+    <!-- 📈 Updates -->
+    <div class="stat-block">
+      <h4>📈 Updates</h4>
+      <p>Last: <span class="timestamp">{{ stats.last_update.strftime('%Y-%m-%d %H:%M:%S') if stats.last_update else 'N/A' }}</span></p>
+      <p>7-Day: <strong>{{ stats.recent_updates }}</strong></p>
+      <p>ID: <strong>{{ stats.most_updated_id }}</strong></p>
+    </div>
 
-  <!-- 🧪 Freshness -->
-  <div class="card">
-    <h4 class="">🧪 Freshness</h4>
-    <ul>
-      <li><span class="badge fresh">Fresh</span>: {{ stats.freshness.fresh }}</li>
-      <li><span class="badge moderate">Moderate</span>: {{ stats.freshness.moderate }}</li>
-      <li><span class="badge stale">Stale</span>: {{ stats.freshness.stale }}</li>
-    </ul>
-  </div>
+    <!-- 🧪 Freshness -->
+    <div class="stat-block">
+      <h4>🧪 Freshness</h4>
+      <p><span class="badge fresh">Fresh</span>: {{ stats.freshness.fresh }}</p>
+      <p><span class="badge moderate">Moderate</span>: {{ stats.freshness.moderate }}</p>
+      <p><span class="badge stale">Stale</span>: {{ stats.freshness.stale }}</p>
+    </div>
 
-  <!-- 🔧 Top Fields -->
-  <div class="card">
-    <h4 class="">🔧 Top Fields</h4>
-    <ul>
+    <!-- 🔧 Top Fields -->
+    <div class="stat-block">
+      <h4>🔧 Top Fields</h4>
       {% for field, count in stats.top_fields %}
-        <li>{{ field }} <span class="badge badge-secondary">{{ count }}</span></li>
+        <p>{{ field }} <span class="badge badge-secondary">{{ count }}</span></p>
       {% endfor %}
-    </ul>
-  </div>
+    </div>
 
-  <!-- 🧹 Quality -->
-  <div class="card">
-    <h4 class="">🧹 Quality</h4>
-    <ul>
-      <li>Missing Movies: <strong>{{ stats.movies_missing_fields }}</strong></li>
-      <li>Missing Series: <strong>{{ stats.series_missing_fields }}</strong></li>
-      <li>Orphaned Logs: <strong>{{ stats.orphaned_logs }}</strong></li>
-    </ul>
-  </div>
-</div>
+    <!-- 🧹 Quality -->
+    <div class="stat-block">
+      <h4>🧹 Quality</h4>
+      <p>Missing Movies: <strong>{{ stats.movies_missing_fields }}</strong></p>
+      <p>Missing Series: <strong>{{ stats.series_missing_fields }}</strong></p>
+      <p>Orphaned Logs: <strong>{{ stats.orphaned_logs }}</strong></p>
+    </div>
+

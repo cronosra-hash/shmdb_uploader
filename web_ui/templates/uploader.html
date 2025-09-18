@@ -1,18 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}TMDB Uploader{% endblock %}
-{% block header %}SHMDB Uploader{% endblock %}
-{% block subheader %}<h2>Upload Movie or TV Series</h2>{% endblock %}
-
 {% block content %}
-
 <div class="page-wrapper">
-  {% include "partials/_search_form.html" %}
 
-  <!-- Add spacing here -->
-  <div style="margin-top: 2em;"></div>
+  <!-- 🔍 Search Form Panel -->
+  <div class="panel">
+    <h2>🔍 Search & Upload</h2>
+    {% include "partials/_search_form.html" %}
+  </div>
 
-  {% include "partials/_stats_panel.html" %}
+  <!-- 📊 Stats Panel -->
+  <div class="panel">
+    <h2>📊 Upload Stats</h2>
+    {% include "partials/_stats_panel.html" %}
+  </div>
+
 </div>
-
 {% endblock %}
