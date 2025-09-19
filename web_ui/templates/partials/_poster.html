@@ -1,5 +1,7 @@
 {% if result.poster_path %}
-  <img class="poster" src="https://image.tmdb.org/t/p/w185{{ result.poster_path }}" alt="Poster">
+  <a href="https://www.themoviedb.org/{{ result.media_type }}/{{ result.id }}" target="_blank" rel="noopener noreferrer">
+    <img class="poster" src="https://image.tmdb.org/t/p/w185{{ result.poster_path }}" alt="Poster">
+  </a>
 {% else %}
   <div class="poster placeholder" aria-label="No poster available">
     <span>No Image</span>
