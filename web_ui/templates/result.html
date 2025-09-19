@@ -9,7 +9,15 @@
 {% block content %}
 <div class="panel nav-panel">
   <a href="{{ url_for('read_root') }}" class="back-button">← Back to Index</a>
-  <a href="{{ url_for('uploader') }}" class="back-button">← Back to Upload</a>
+
+  <a href="{{ url_for('uploader') }}" class="back-button">
+    ← Back to Upload
+    {% if upload_success %}
+      <span class="badge success-badge">✅ Success</span>
+    {% elif upload_failed %}
+      <span class="badge error-badge">⚠ Failed</span>
+    {% endif %}
+  </a>
 </div>
 
   <div class="panel change-panel">

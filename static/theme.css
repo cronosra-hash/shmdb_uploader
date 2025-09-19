@@ -872,3 +872,179 @@ pre {
   margin-top: 1rem;
   box-shadow: 0 0 0 1px #222;
 }
+
+/* ──────────────────────────────────────────────── */
+/* 🩺 DIAGNOSTICS BADGE */
+/* ──────────────────────────────────────────────── */
+
+.badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+.success-badge {
+  background-color: #00C853;
+  color: #FFF;
+  box-shadow: 0 0 0 1px #00C853, 0 0 4px #00C85388;
+}
+
+.error-badge {
+  background-color: #FF0033;
+  color: #FFF;
+  box-shadow: 0 0 0 1px #FF0033, 0 0 4px #FF0033AA;
+}
+
+/* ──────────────────────────────────────────────── */
+/* 🧑‍🎤 PERSON RESULTS PAGE */
+/* ──────────────────────────────────────────────── */
+
+.page-wrapper {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-title {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 6px var(--neon-cyan);
+  margin-bottom: 2rem;
+}
+
+.card {
+  background-color: #0A0A0A;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px #222, 0 0 10px #00B2FF33;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  animation: fadeInUp 0.4s ease-out;
+}
+
+.person-meta {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.person-meta img {
+  box-shadow: 0 0 10px var(--neon-cyan);
+  border-radius: 8px;
+  max-width: 200px;
+}
+
+.person-details h3 {
+  color: var(--neon-pink);
+  text-shadow: 0 0 5px var(--neon-pink);
+  margin-bottom: 0.5rem;
+}
+
+.person-details p {
+  margin: 0.3rem 0;
+}
+
+.person-details details summary {
+  cursor: pointer;
+  color: var(--neon-green);
+  text-shadow: 0 0 5px var(--neon-green);
+  font-weight: 600;
+}
+
+.person-details details p {
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+
+/* 🩺 Badge Styles */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+}
+
+.badge-success {
+  background-color: #00C853;
+  color: #FFF;
+  box-shadow: 0 0 0 1px #00C853, 0 0 4px #00C85388;
+}
+
+.badge-secondary {
+  background-color: #444;
+  color: #CCC;
+  box-shadow: 0 0 0 1px #444;
+}
+
+.badge-warning {
+  background-color: #FFB300;
+  color: #000;
+  box-shadow: 0 0 0 1px #FFB300, 0 0 4px #FFB30088;
+}
+
+/* 🎬 Credits Section */
+.credits-toggle {
+  margin-top: 1.5rem;
+}
+
+.credits-summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 4px var(--neon-cyan);
+  margin-bottom: 0.5rem;
+}
+
+.credits-table-wrapper {
+  overflow-x: auto;
+}
+
+.credits-table-wrapper table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #111;
+  color: var(--text-color);
+  border-radius: 8px;
+  box-shadow: 0 0 10px var(--neon-cyan);
+  overflow: hidden;
+}
+
+.credits-table-wrapper th,
+.credits-table-wrapper td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #222;
+}
+
+.credits-table-wrapper thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #111;
+  box-shadow: 0 2px 4px #000;
+}
+
+.credits-table-wrapper th {
+  border-bottom: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  font-weight: 600;
+}
+
+/* ✨ Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

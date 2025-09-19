@@ -150,7 +150,7 @@ async def search_person(request: Request):
     name = form.get("person_name")
     people = search_person_tmdb(name)
     return templates.TemplateResponse(
-        "person_results.html", {"request": request, "people": people}
+        "person_results.html", {"request": request, "people": people, "now": datetime.now(),}
     )
 
 
