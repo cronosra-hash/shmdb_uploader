@@ -382,7 +382,7 @@ async def search(request: Request):
     annotated_results = annotate_results_with_db_status(results)
 
     return templates.TemplateResponse(
-        "search_results.html", {"request": request, "results": annotated_results}
+        "search_results.html", {"request": request, "results": annotated_results, "now": datetime.now()}
     )
 
 
@@ -486,7 +486,8 @@ async def upload(request: Request, tmdb_id: int, media_type: str):
             "content_id": content_id,
             "media_type": media_type,
             "upload_status": "Upload complete",  # optional
-            "raw_changes": changes,              # optional
+            "raw_changes": changes,
+            "now": datetime.now(),
         }
     )
 

@@ -1,8 +1,7 @@
 {% if result.poster_path %}
-<img class="poster" src="https://image.tmdb.org/t/p/w185{{ result.poster_path }}" alt="Poster">
+  <img class="poster" src="https://image.tmdb.org/t/p/w185{{ result.poster_path }}" alt="Poster">
 {% else %}
-<div class="poster"
-    style="height: 278px; background-color: #ccc; display: flex; align-items: center; justify-content: center;" aria-label="No poster available>
+  <div class="poster placeholder" aria-label="No poster available">
     <span>No Image</span>
-</div>
+  </div>
 {% endif %}

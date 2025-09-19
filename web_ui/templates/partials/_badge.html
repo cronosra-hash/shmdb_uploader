@@ -1,11 +1,23 @@
-<div class="badge {% if result.exists %}badge-success{% else %}badge-secondary{% endif %} tooltip-container"
-  aria-describedby="tooltip-{{ result.id }}">
-  {% if result.exists %}In DB{% else %}New{% endif %}
-  <span id="tooltip-{{ result.id }}" class="tooltip-text" role="tooltip">
-    {% if result.exists %}Already uploaded to database{% else %}Not yet added to database{% endif %}
+<div class="badge-group" role="group" aria-label="Status for {{ result.name or result.title }}">
+
+  <!-- 📦 DB Status Badge -->
+  <span class="badge {% if result.exists %}badge-success{% else %}badge-secondary{% endif %} tooltip-container"
+        aria-describedby="tooltip-{{ result.id }}">
+    {% if result.exists %}In DB{% else %}New{% endif %}
+    <span id="tooltip-{{ result.id }}" class="tooltip-text" role="tooltip">
+      {% if result.exists %}Already uploaded to database{% else %}Not yet added to database{% endif %}
+    </span>
   </span>
-  <span class="badge {{ result.freshness }}">
+
+  <!-- 🧪 Freshness Badge -->
+  <span class="badge freshness {% if result.freshness == 'fresh' %}fresh{% elif result.freshness == 'moderate' %}moderate{% else %}stale{% endif %}">
     {% if result.freshness == 'fresh' %}
-    🟢 Updated < 7 days {% elif result.freshness=='moderate' %} 🟡 Updated < 30 days {% else %} 🔴 Stale {% endif %}
+      🟢 Updated < 7 days
+    {% elif result.freshness == 'moderate' %}
+      🟡 Updated < 30 days
+    {% else %}
+      🔴 Stale
+    {% endif %}
   </span>
+
 </div>

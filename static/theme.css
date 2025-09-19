@@ -143,6 +143,11 @@ body {
   padding-bottom: 0.5rem;
 }
 
+.nav-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
 
 /* ──────────────────────────────────────────────── */
 /* 🎬 RELEASE TABLE */
@@ -554,4 +559,316 @@ body {
 .badge-secondary {
   background-color: #333;
   color: #EEE;
+}
+
+/* ──────────────────────────────────────────────── */
+/* 🔍 SEARCH RESULTS PAGE */
+/* ──────────────────────────────────────────────── */
+
+/* 🧱 RESULTS CONTAINER */
+.results-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  box-sizing: border-box;
+}
+
+/* 🔍 RESULTS GRID — 4 Columns */
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* ✅ clean 4-column layout */
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+/* Responsive fallback */
+@media (max-width: 1000px) {
+  .results-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .results-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 450px) {
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ──────────────────────────────────────────────── */
+/* 🧩 RESULT CARD */
+/* ──────────────────────────────────────────────── */
+
+.result-card {
+  display: flex;
+  flex-direction: column;
+  background-color: #1A1A1A;
+  padding: 1rem;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px #2A2A2A;
+  animation: fadeInUp 0.6s ease-out;
+  width: 100%;
+}
+
+.result-meta {
+  margin-top: 0.75rem;
+}
+
+.result-card .title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #EAEAEA;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.media-icon {
+  font-size: 1.2rem;
+}
+
+.year {
+  color: #AAA;
+  font-size: 0.9rem;
+  margin-left: 0.25rem;
+}
+
+.timestamp {
+  font-size: 0.85rem;
+  color: #888;
+  font-family: monospace;
+  margin-top: 0.5rem;
+}
+
+/* ──────────────────────────────────────────────── */
+/* 🖼 POSTER IMAGE */
+/* ──────────────────────────────────────────────── */
+
+.poster {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3; /* keeps poster shape without hardcoding */
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px #2A2A2A;
+}
+
+/* Fallback placeholder */
+.poster.placeholder {
+  background-color: #333;
+  color: #AAA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* ──────────────────────────────────────────────── */
+/* 🏷 BADGE GROUP */
+/* ──────────────────────────────────────────────── */
+
+.badge-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  font-weight: 600;
+  position: relative;
+}
+
+.badge-success {
+  background-color: #00FFAA;
+  color: #000;
+}
+
+.badge-secondary {
+  background-color: #333;
+  color: #EEE;
+}
+
+.badge.fresh {
+  background-color: #00FFAA;
+  color: #000;
+}
+
+.badge.moderate {
+  background-color: #FFD700;
+  color: #000;
+}
+
+.badge.stale {
+  background-color: #FF5555;
+  color: #000;
+}
+
+/* 🧠 Tooltip */
+.tooltip-container:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tooltip-text {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.25rem;
+  background-color: #222;
+  color: #EEE;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 10;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* ──────────────────────────────────────────────── */
+/* 🧩 ACTION FORM BUTTON */
+/* ──────────────────────────────────────────────── */
+
+.action-form {
+  margin-top: 0.75rem;
+}
+
+.action-btn {
+  background-color: #00B2FF;
+  color: #000;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.action-btn:hover {
+  background-color: #0090D0;
+}
+
+.btn-label {
+  font-size: 0.9rem;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #000;
+  border-top: 2px solid #00B2FF;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.spinner[hidden] {
+  display: none;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ──────────────────────────────────────────────── */
+/* 📤 UPLOAD RESULT PAGE */
+/* ──────────────────────────────────────────────── */
+
+.upload-message {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #00B2FF;
+}
+
+/* 🔙 Back Button */
+.back-button {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: #00B2FF;
+  text-decoration: none;
+}
+
+.back-button:hover {
+  text-decoration: underline;
+}
+
+/* 📊 Change Log Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2rem;
+  font-size: 0.85rem;
+  background-color: #111;
+  border: 1px solid #333;
+}
+
+thead {
+  background-color: #222;
+}
+
+th, td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #333;
+}
+
+th {
+  font-weight: 600;
+  color: #00B2FF;
+}
+
+tr:nth-child(even) {
+  background-color: #1A1A1A;
+}
+
+tr:hover {
+  background-color: #2A2A2A;
+}
+
+/* 🧾 JSON Dump */
+pre {
+  background-color: #1A1A1A;
+  color: #AAA;
+  padding: 1rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  overflow-x: auto;
+  box-shadow: inset 0 0 0 1px #333;
+}
+
+/* 🕳 Empty State */
+.empty-state {
+  font-style: italic;
+  color: #888;
+  margin-top: 1rem;
+}
+
+/* ──────────────────────────────────────────────── */
+/* 📦 CHANGE PANEL */
+/* ──────────────────────────────────────────────── */
+
+.change-panel {
+  background-color: #111;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+  box-shadow: 0 0 0 1px #222;
 }

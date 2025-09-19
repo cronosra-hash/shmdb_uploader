@@ -1,10 +1,13 @@
-<div class="action">
-    <form method="post" action="/search">
-        <input type="hidden" name="tmdb_id" value="{{ result.id }}">
-        <input type="hidden" name="media_type" value="{{ result.media_type }}">
-        <button type="submit" class="" id="submit-btn">
-            <span class="btn-label">{% if result.exists %}Update{% else %}Insert{% endif %}</span>
-            <span class="spinner" hidden></span>
-        </button>
-    </form>
+<div class="action-form">
+  <form method="post" action="/search">
+    <input type="hidden" name="tmdb_id" value="{{ result.id }}">
+    <input type="hidden" name="media_type" value="{{ result.media_type }}">
+
+    <button type="submit" class="action-btn" id="submit-btn-{{ result.id }}">
+      <span class="btn-label">
+        {% if result.exists %}Update{% else %}Insert{% endif %}
+      </span>
+      <span class="spinner" hidden></span>
+    </button>
+  </form>
 </div>

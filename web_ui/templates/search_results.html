@@ -1,14 +1,24 @@
 {% extends "base.html" %}
 
-{% block title %}Search Results{% endblock %}
-{% block header %}Search Results{% endblock %}
-
 {% block content %}
-<a href="{{ url_for('read_root') }}" class="back-button">← Back to Index</a>
-
-<div class="grid-container">
-  {% for result in results %}
-    {% include "partials/_result_card.html" %}
-  {% endfor %}
+<div class="panel nav-panel">
+  <a href="{{ url_for('read_root') }}" class="back-button">← Back to Index</a>
+  <a href="{{ url_for('uploader') }}" class="back-button">← Back to Upload</a>
 </div>
+
+<div class="panel results-panel">
+  <h2>🔍 Results</h2>
+  {% if results %}
+<div class="results-container">
+  <div class="results-grid">
+    {% for result in results %}
+      {% include "partials/_result_card.html" %}
+    {% endfor %}
+  </div>
+</div>
+  {% else %}
+    <p class="empty-state">No results found. Try a different search.</p>
+  {% endif %}
+</div>
+
 {% endblock %}

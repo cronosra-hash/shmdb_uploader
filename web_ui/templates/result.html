@@ -1,41 +1,52 @@
 {% extends "base.html" %}
 
 {% block title %}Upload Result{% endblock %}
-{% block header %}Upload Result{% endblock %}
 
 {% block subheader %}
-<h2 class="upload-message">{{ message }}</h2>
+  <h2 class="upload-message">{{ message }}</h2>
 {% endblock %}
 
 {% block content %}
-<a href="{{ url_for('read_root') }}" class="back-button">← Back to Index</a>
+<div class="panel nav-panel">
+  <a href="{{ url_for('read_root') }}" class="back-button">← Back to Index</a>
+  <a href="{{ url_for('uploader') }}" class="back-button">← Back to Upload</a>
+</div>
 
-{% if changes %}
-<table>
-  <thead>
-    <tr>
-      <th>Logged At</th>
-      <th>Update Type</th>
-      <th>Field</th>
-      <th>Previous</th>
-      <th>Current</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for change in changes %}
-    <tr style="--row-index: {{ loop.index0 }}">
-      <td>{{ change["timestamp"] | datetimeformat }}</td>
-      <td>{{ change["update_type"] }}</td>
-      <td>{{ change["field_name"] }}</td>
-      <td>{{ change["previous_value"] }}</td>
-      <td>{{ change["current_value"] }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-<pre>{{ changes | tojson(indent=2) }}</pre>
-{% else %}
-<p>No changes found.</p>
-<pre>{{ changes | tojson(indent=2) }}</pre>
-{% endif %}
+  <div class="panel change-panel">
+    {% if changes %}
+      <table>
+        <thead>
+          <tr>
+            <th>Logged At</th>
+            <th>Update Type</th>
+            <th>Field</th>
+            <th>Previous</th>
+            <th>Current</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for change in changes %}
+          <tr style="--row-index: {{ loop.index0 }}">
+            <td>{{ change["timestamp"] | datetimeformat }}</td>
+            <td>{{ change["update_type"] }}</td>
+            <td>{{ change["field_name"] }}</td>
+            <td>{{ change["previous_value"] }}</td>
+            <td>{{ change["current_value"] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <details>
+        <summary>View raw change log (JSON)</summary>
+        <pre>{{ changes | tojson(indent=2) }}</pre>
+      </details>
+    {% else %}
+      <p class="empty-state">No changes found.</p>
+      <details>
+        <summary>Raw JSON</summary>
+        <pre>{{ changes | tojson(indent=2) }}</pre>
+      </details>
+    {% endif %}
+  </div>
 {% endblock %}

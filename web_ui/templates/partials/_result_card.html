@@ -1,15 +1,25 @@
-<div class="card fadeInUp" role="group" aria-label="{{ result.name or result.title }}">
-    {% include "partials/_poster.html" %}
+<div class="result-card fadeInUp" role="group" aria-label="{{ result.name or result.title }}">
+
+  {% include "partials/_poster.html" %}
+
+  <div class="result-meta">
     <div class="title">
-        <span class="media-icon">
-            {% if result.media_type == "movie" %}🎬{% elif result.media_type == "tv" %}📺{% endif %}
-        </span>
-        {{result.id}} - {{ result.name or result.title }}
-        {% if result.release_date or result.first_air_date %} ({{ (result.release_date or result.first_air_date)[:4] }}) {% endif %}
+      <span class="media-icon">
+        {% if result.media_type == "movie" %}🎬{% elif result.media_type == "tv" %}📺{% endif %}
+      </span>
+      {{ result.id }} – {{ result.name or result.title }}
+      {% if result.release_date or result.first_air_date %}
+        <span class="year">({{ (result.release_date or result.first_air_date)[:4] }})</span>
+      {% endif %}
     </div>
+
     {% include "partials/_badge.html" %}
+
     {% if result.last_updated %}
-    <div class="timestamp">Last updated: {{ result.last_updated.strftime('%Y-%m-%d %H:%M') }}</div>
+      <div class="timestamp">Last updated: {{ result.last_updated.strftime('%Y-%m-%d %H:%M') }}</div>
     {% endif %}
+
     {% include "partials/_action_form.html" %}
+  </div>
+
 </div>
