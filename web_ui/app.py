@@ -73,14 +73,20 @@ async def title_detail(request: Request, title_id: int):
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    now = datetime.now()  # ← this is the fix
+    now = datetime.now()
+    next_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1)
+
+    current_releases = get_cinema_releases(month=now.month, year=now.year)
+    next_month_releases = get_cinema_releases(month=next_month.month, year=next_month.year)
+
     return templates.TemplateResponse("index.html", {
         **get_stats_context(request),
         "app_env": APP_ENV,
         "app_version": "0.1.0",
         "now": now,
-        "new_releases": get_new_releases(),
-        "cinema_releases": get_cinema_releases(month=now.month, year=now.year),
+        "next_month": next_month,
+        "cinema_releases": current_releases,
+        "next_month_releases": next_month_releases,
         "tv_releases": get_tv_releases(month=now.month, year=now.year),
     })
 
@@ -610,11 +616,22 @@ def search_tmdb_combined(name):
             results = response.json().get("results", [])
             for result in results:
                 result["media_type"] = media_type
+
+                # Enrich with imdb_id
+                detail_url = (
+                    f"https://api.themoviedb.org/3/movie/{result['id']}"
+                    if media_type == "movie"
+                    else f"https://api.themoviedb.org/3/tv/{result['id']}/external_ids"
+                )
+                detail_response = requests.get(detail_url, params={"api_key": TMDB_API_KEY})
+                if detail_response.status_code == 200:
+                    detail_data = detail_response.json()
+                    result["imdb_id"] = detail_data.get("imdb_id")
+
                 combined_results.append(result)
 
     combined_results.sort(key=lambda x: x.get("popularity", 0), reverse=True)
     return combined_results
-
 
 def search_person_tmdb(name):
     url = "https://api.themoviedb.org/3/search/person"
@@ -696,89 +713,166 @@ def search_person_tmdb(name):
 
     return people
 
-def get_cinema_releases(month: int = None, year: int = None) -> List[Dict]:
-    from datetime import datetime
-    now = datetime.now()
-    month = month or now.month
-    year = year or now.year
+TMDB_BASE = "https://api.themoviedb.org/3"
 
-    # Example hardcoded data for September 2025
-    if month == 9 and year == 2025:
-        return [
-            {
-                "title": "Highest 2 Lowest",
-                "release_date": "2025-09-05",
-                "genre": "Thriller / Drama",
-                "source": "Radio Times",
-                "source_url": "https://www.radiotimes.com/movies/best-films-uk-september-2025/"
-            },
-            {
-                "title": "The Conjuring: Last Rites",
-                "release_date": "2025-09-05",
-                "genre": "Horror",
-                "source": "Radio Times",
-                "source_url": "https://www.radiotimes.com/movies/best-films-uk-september-2025/"
-            },
-            {
-                "title": "Downton Abbey: The Grand Finale",
-                "release_date": "2025-09-19",
-                "genre": "Historical Drama",
-                "source": "Screen Daily",
-                "source_url": "https://www.screendaily.com/news/uk-ireland-film-cinema-release-dates-latest-updates-for-2025/5200243.article"
-            },
-            {
-                "title": "A Big Bold Beautiful Journey",
-                "release_date": "2025-09-19",
-                "genre": "Fantasy / Romance",
-                "source": "Screen Daily",
-                "source_url": "https://www.screendaily.com/news/uk-ireland-film-cinema-release-dates-latest-updates-for-2025/5200243.article"
-            },
-            {
-                "title": "Steve",
-                "release_date": "2025-09-27",
-                "genre": "Drama",
-                "source": "Radio Times",
-                "source_url": "https://www.radiotimes.com/movies/best-films-uk-september-2025/"
-            },
-            {
-                "title": "One Battle After Another",
-                "release_date": "2025-09-26",
-                "genre": "Thriller",
-                "source": "Screen Daily",
-                "source_url": "https://www.screendaily.com/news/uk-ireland-film-cinema-release-dates-latest-updates-for-2025/5200243.article"
-            },
-            {
-                "title": "Materialists",
-                "release_date": "2025-09-12",
-                "genre": "Romantic Comedy",
-                "source": "Radio Times",
-                "source_url": "https://www.radiotimes.com/movies/best-films-uk-september-2025/"
-            }
-        ]
+# Cache genre maps
+_movie_genres = None
+_tv_genres = None
+
+def get_movie_details(movie_id: int) -> Dict:
+    url = f"{TMDB_BASE}/movie/{movie_id}"
+    params = {"api_key": TMDB_API_KEY, "language": "en-GB"}
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        return response.json()
+    except Exception as e:
+        print(f"Error fetching details for movie {movie_id}: {e}")
+        return {}
+
+def get_genre_map(content_type: str) -> Dict[int, str]:
+    global _movie_genres, _tv_genres
+    if content_type == "movie" and _movie_genres:
+        return _movie_genres
+    if content_type == "tv" and _tv_genres:
+        return _tv_genres
+
+    url = f"{TMDB_BASE}/genre/{content_type}/list"
+    params = {"api_key": TMDB_API_KEY, "language": "en-GB"}
+    response = requests.get(url, params=params)
+    genres = response.json().get("genres", [])
+    genre_map = {g["id"]: g["name"] for g in genres}
+
+    if content_type == "movie":
+        _movie_genres = genre_map
+    else:
+        _tv_genres = genre_map
+
+    return genre_map
+
+def get_uk_release_info(movie_id: int) -> Dict:
+    url = f"{TMDB_BASE}/movie/{movie_id}/release_dates"
+    params = {"api_key": TMDB_API_KEY}
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        data = response.json()
+        for entry in data.get("results", []):
+            if entry.get("iso_3166_1") == "GB":
+                for release in entry.get("release_dates", []):
+                    if release.get("type") in [2, 3]:  # Theatrical
+                        return {
+                            "date": release.get("release_date", "")[:10],
+                            "certification": release.get("certification", "")
+                        }
+    except Exception as e:
+        print(f"Error fetching UK release info for movie {movie_id}: {e}")
+    return {"date": "", "certification": ""}
+
+def get_month_range(month: int = None, year: int = None) -> List[str]:
+    if month and year:
+        return [f"{year}-{month:02d}"]
+    now = datetime.now()
+    current_releases = get_cinema_releases(month=now.month, year=now.year)
+    next_month = (now.replace(day=1) + timedelta(days=32))
+    next_month_releases = get_cinema_releases(month=next_month.month, year=next_month.year)
+    return [
+        current_releases.strftime("%Y-%m"),
+        next_month.strftime("%Y-%m")
+    ]
+
+def get_cinema_releases(month: int = None, year: int = None) -> List[Dict]:
+    genre_map = get_genre_map("movie")
+    releases = []
+
+    for ym in get_month_range(month, year):
+        y, m = map(int, ym.split("-"))
+        url = f"{TMDB_BASE}/discover/movie"
+        params = {
+            "api_key": TMDB_API_KEY,
+            "language": "en-GB",
+            "sort_by": "popularity.desc",
+            "release_date.gte": f"{y}-{m:02d}-01",
+            "release_date.lte": f"{y}-{m:02d}-31"
+        }
+
+        response = requests.get(url, params=params)
+        movies = response.json().get("results", [])
+
+        for movie in movies:
+            release_info = get_uk_release_info(movie["id"])
+            uk_date = release_info["date"]
+            if isinstance(uk_date, str) and uk_date.startswith(f"{y}-{m:02d}"):
+                details = get_movie_details(movie["id"])
+                distributor = ""
+                if details.get("production_companies"):
+                    distributor = details["production_companies"][0].get("name", "")
+                releases.append({
+                    "title": movie["title"],
+                    "release_date": uk_date,
+                    "runtime": details.get("runtime", "Unknown"),
+                    "certification": release_info.get("certification", "Unrated"),
+                    "distributor": distributor or "Unknown",
+                    "genre": " / ".join([genre_map.get(gid, "Unknown") for gid in movie.get("genre_ids", [])]),
+                    "poster_path": movie.get("poster_path"),
+                    "source": "TMDb",
+                    "source_url": f"https://www.themoviedb.org/movie/{movie['id']}"
+                })
+
+    return releases
+
+def get_tv_platform(tv_id: int) -> str:
+    url = f"{TMDB_BASE}/tv/{tv_id}"
+    params = {"api_key": TMDB_API_KEY, "language": "en-GB"}
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        data = response.json()
+        networks = data.get("networks", [])
+        return networks[0]["name"] if networks else "Unknown"
+    except Exception:
+        return "Unknown"
 
 def get_tv_releases(month: int = None, year: int = None) -> List[Dict]:
-        from datetime import datetime
-        now = datetime.now()
-        month = month or now.month
-        year = year or now.year
+    genre_map = get_genre_map("tv")
+    releases = []
 
-        # Example hardcoded data for September 2025
-        if month == 9 and year == 2025:
-            return [
-                {
-                    "title": "Doctor Who: Genesis Protocol",
-                    "release_date": "2025-09-21",
-                    "platform": "BBC One",
-                    "genre": "Sci-Fi / Drama",
-                    "source": "Radio Times",
-                    "source_url": "https://www.radiotimes.com/tv/tv-listings/"
-                },
-                {
-                    "title": "The Crown: Final Season",
-                    "release_date": "2025-09-28",
-                    "platform": "Netflix",
-                    "genre": "Historical Drama",
-                    "source": "Radio Times",
-                    "source_url": "https://www.radiotimes.com/streaming/netflix/"
-                }
-            ]
+    for ym in get_month_range(month, year):
+        y, m = map(int, ym.split("-"))
+        url = f"{TMDB_BASE}/discover/tv"
+        params = {
+            "api_key": TMDB_API_KEY,
+            "language": "en-GB",
+            "sort_by": "first_air_date.asc",
+            "first_air_date.gte": f"{y}-{m:02d}-01",
+            "first_air_date.lte": f"{y}-{m:02d}-31"
+        }
+
+        response = requests.get(url, params=params)
+        shows = response.json().get("results", [])
+
+        for s in shows:
+            if "GB" not in s.get("origin_country", []):
+                continue
+
+            # Fetch broadcaster info from TV details
+            detail_url = f"{TMDB_BASE}/tv/{s['id']}"
+            detail_params = {
+                "api_key": TMDB_API_KEY,
+                "language": "en-GB"
+            }
+            detail_response = requests.get(detail_url, params=detail_params)
+            detail_data = detail_response.json()
+
+            broadcasters = detail_data.get("networks", [])
+            broadcaster_names = [b.get("name") for b in broadcasters if b.get("name")]
+            broadcaster = ", ".join(broadcaster_names) if broadcaster_names else "Unknown"
+
+            releases.append({
+                "title": s["name"],
+                "release_date": s.get("first_air_date", "Unknown"),
+                "platform": broadcaster,
+                "genre": " / ".join([genre_map.get(gid, "Unknown") for gid in s.get("genre_ids", [])]),
+                "poster_path": s.get("poster_path"),
+                "source": "TMDb",
+                "source_url": f"https://www.themoviedb.org/tv/{s['id']}"
+            })
+
+    return releases

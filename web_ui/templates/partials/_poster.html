@@ -1,9 +1,14 @@
-{% if result.poster_path %}
-  <a href="https://www.themoviedb.org/{{ result.media_type }}/{{ result.id }}" target="_blank" rel="noopener noreferrer">
-    <img class="poster" src="https://image.tmdb.org/t/p/w185{{ result.poster_path }}" alt="Poster">
-  </a>
-{% else %}
-  <div class="poster placeholder" aria-label="No poster available">
-    <span>No Image</span>
-  </div>
-{% endif %}
+<div class="poster-wrapper">
+  {% if result.poster_path %}
+    <img
+      class="poster-img"
+      src="https://image.tmdb.org/t/p/w185{{ result.poster_path }}"
+      alt="{{ result.title }} poster"
+      loading="lazy"
+    >
+  {% else %}
+    <div class="poster-placeholder" aria-label="No poster available">
+      <span class="poster-text">No Image</span>
+    </div>
+  {% endif %}
+</div>

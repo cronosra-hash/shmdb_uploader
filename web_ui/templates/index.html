@@ -2,12 +2,8 @@
 {% import "news_macros.html" as news %}
 {% from "macros/panels.html" import render_cinema_panel, render_tv_panel %}
 
-{{ render_cinema_panel(cinema_releases) }}
-{{ render_tv_panel(tv_releases) }}
-
-
 {% block content %}
-  {{ render_cinema_panel(cinema_releases, now) }}
+  {{ render_cinema_panel(cinema_releases, next_month_releases, now, next_month) }}  
   {{ render_tv_panel(tv_releases, now) }}
 
   <div class="panel">

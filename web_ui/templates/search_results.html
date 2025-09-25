@@ -6,19 +6,16 @@
   <a href="{{ url_for('uploader') }}" class="back-button">← Back to Upload</a>
 </div>
 
-<div class="panel results-panel">
+<div class="results-panel">
   <h2>🔍 Results</h2>
   {% if results %}
-<div class="results-container">
-  <div class="results-grid">
+  <div class="result-grid">
     {% for result in results %}
       {% include "partials/_result_card.html" %}
     {% endfor %}
   </div>
-</div>
   {% else %}
-    <p class="empty-state">No results found. Try a different search.</p>
+  <p class="empty-state">No results found. Try a different search.</p>
   {% endif %}
 </div>
-
 {% endblock %}

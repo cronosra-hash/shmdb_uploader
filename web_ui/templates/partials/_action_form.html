@@ -1,8 +1,7 @@
-<div class="action-form">
-  <form method="post" action="/search">
+<div class="action-row">
+  <form method="post" action="/search" class="action-form">
     <input type="hidden" name="tmdb_id" value="{{ result.id }}">
     <input type="hidden" name="media_type" value="{{ result.media_type }}">
-
     <button type="submit" class="action-btn" id="submit-btn-{{ result.id }}">
       <span class="btn-label">
         {% if result.exists %}Update{% else %}Insert{% endif %}
@@ -10,4 +9,14 @@
       <span class="spinner" hidden></span>
     </button>
   </form>
+
+  {% if result.imdb_id %}
+    <a href="https://www.imdb.com/title/{{ result.imdb_id }}" target="_blank" rel="noopener noreferrer" class="action-link" aria-label="View on IMDb">
+      <img src="/static/icons/imdb.svg" alt="IMDb" class="icon"> IMDb
+    </a>
+  {% endif %}
+
+  <a href="https://www.themoviedb.org/{{ result.media_type }}/{{ result.id }}" target="_blank" rel="noopener noreferrer" class="action-link" aria-label="View on TMDB">
+    <img src="/static/icons/tmdb.svg" alt="TMDB" class="icon"> TMDB
+  </a>
 </div>

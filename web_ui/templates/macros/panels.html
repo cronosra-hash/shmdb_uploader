@@ -1,23 +1,41 @@
-{% macro render_cinema_panel(releases, now) %}
+{% macro format_runtime(minutes) %}
+  {% if minutes %}
+    {% set hours = minutes // 60 %}
+    {% set mins = minutes % 60 %}
+    {% if hours > 0 %}
+      {{ hours }}h{% if mins > 0 %} {{ mins }}m{% endif %}
+    {% else %}
+      {{ mins }}m
+    {% endif %}
+  {% else %}
+    —
+  {% endif %}
+{% endmacro %}
+
+{% macro render_cinema_panel(current_releases, next_releases, now, next_month) %}
   <div class="panel cinema-panel">
-    <h2>🎟️ Cinema Releases – {{ now.strftime('%B %Y') }}</h2>
-    {% if releases %}
+    <h2>🎟️ Cinema Releases – {{ now.strftime('%B %Y') }} <span class="region-tag">🇬🇧 UK Only</span></h2>
+    {% if current_releases %}
       <table class="release-table">
         <thead>
           <tr>
             <th>Title</th>
-            <th>Date</th>
-            <th>Genre</th>
-            <th>Source</th>
+            <th>📅 Date</th>
+            <th>⏱️ Runtime</th>
+            <th>🛡️ Certification</th>
+            <th>🏢 Distributor</th>
+            <th>🎭 Genre</th>
           </tr>
         </thead>
         <tbody>
-          {% for release in releases %}
+          {% for release in current_releases %}
           <tr>
             <td><a href="{{ release.source_url }}" target="_blank">{{ release.title }}</a></td>
-            <td>{{ release.release_date }}</td>
-            <td>{{ release.genre }}</td>
-            <td>{{ release.source }}</td>
+            <td>{{ release.release_date or "Unknown" }}</td>
+            <td>{{ format_runtime(release.runtime) }}</td>
+            <td>{{ release.certification or "Unrated" }}</td>
+            <td>{{ release.distributor or "Unknown" }}</td>
+            <td>{{ release.genre or "Unknown" }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -28,24 +46,73 @@
         <button onclick="location.reload()">🔄 Retry</button>
       </div>
     {% endif %}
+
+    <h3 class="next-month-header">📅 Coming Soon – {{ next_month.strftime('%B %Y') }}</h3>
+    {% if next_releases %}
+      <table class="release-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>📅 Date</th>
+            <th>⏱️ Runtime</th>
+            <th>🛡️ Certification</th>
+            <th>🏢 Distributor</th>
+            <th>🎭 Genre</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for release in next_releases %}
+          <tr>
+            <td><a href="{{ release.source_url }}" target="_blank">{{ release.title }}</a></td>
+            <td>{{ release.release_date or "Unknown" }}</td>
+            <td>{{ format_runtime(release.runtime) }}</td>
+            <td>{{ release.certification or "Unrated" }}</td>
+            <td>{{ release.distributor or "Unknown" }}</td>
+            <td>{{ release.genre or "Unknown" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="news-empty">
+        🚫 No upcoming releases found for next month.
+      </div>
+    {% endif %}
   </div>
 {% endmacro %}
 
+
 {% macro render_tv_panel(shows, now) %}
   <div class="panel tv-panel">
-    <h2>📺 TV Releases – {{ now.strftime('%B %Y') }}</h2>
-  <table class="release-table">
-    <thead><tr><th>Title</th><th>Date</th><th>Platform</th><th>Genre</th></tr></thead>
-    <tbody>
-      {% for show in shows %}
-      <tr>
-        <td><a href="{{ show.source_url }}" target="_blank">{{ show.title }}</a></td>
-        <td>{{ show.release_date }}</td>
-        <td>{{ show.platform }}</td>
-        <td>{{ show.genre }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+    <h2>📺 TV Releases – {{ now.strftime('%B %Y') }} <span class="region-tag">🇬🇧 UK Only</span></h2>
+    {% if shows %}
+      <table class="release-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>📅 Date</th>
+            <th>⏱️ Runtime</th>
+            <th>🏢 Broadcaster</th>
+            <th>🎭 Genre</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for show in shows %}
+          <tr>
+            <td><a href="{{ show.source_url }}" target="_blank">{{ show.title }}</a></td>
+            <td>{{ show.release_date or "Unknown" }}</td>
+            <td>{{ format_runtime(show.runtime) }}</td>
+            <td>{{ show.platform or "Unknown" }}</td>
+            <td>{{ show.genre or "Unknown" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="news-empty">
+        🚫 No UK TV releases found for this month.<br>
+        <button onclick="location.reload()">🔄 Retry</button>
+      </div>
+    {% endif %}
+  </div>
 {% endmacro %}
