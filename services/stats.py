@@ -39,28 +39,16 @@ def get_popular_genres():
 def get_hidden_gems():
     return fetch_stat("hidden_gems")
 
+def get_top_fields():
+    return fetch_stat("top_fields")
+
 def get_new_releases():
-    # Static scaffold — replace with scraping/API logic later
-    return [
-        {
-            "title": "Downton Abbey: The Grand Finale",
-            "release_date": "2025-09-05",
-            "genre": "Drama",
-            "source": "Movie Insider",
-            "source_url": "https://www.movieinsider.com/movies/september/2025",
-        },
-        {
-            "title": "Warfare",
-            "release_date": "2025-09-12",
-            "genre": "War/Drama",
-            "source": "HBO Max",
-            "source_url": "https://www.msn.com/en-us/entertainment/tv/hbo-max-to-add-12-new-shows-movies-this-week-here-are-the-3-to-watch/ar-AA1M3OfG",
-        },
-        {
-            "title": "One Battle After Another",
-            "release_date": "2025-09-TBD",
-            "genre": "Thriller",
-            "source": "Radio Times",
-            "source_url": "https://www.radiotimes.com/movies/best-films-uk-september-2025/",
-        },
-    ]
+    return []
+
+def get_movie_count():
+    result = fetch_stat("movie_count")
+    return result[0]["count"]
+
+def get_series_count():
+    result = fetch_stat("series_count")
+    return result[0]["count"]

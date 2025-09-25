@@ -118,6 +118,9 @@ def get_stats_context(request: Request):
         "app_version": "0.1.0",
         "articles": articles,
         "new_releases": new_releases,
+        "top_fields": stats.get_top_fields(),
+        "movie_count": stats.get_movie_count(),
+        "series_count": stats.get_series_count(),
         "stats": {
             "active_release_years": stats.get_active_release_years(),
             "hidden_gems": stats.get_hidden_gems(),
@@ -166,12 +169,6 @@ async def read_root(request: Request):
     stats = {}
     try:
         with conn.cursor() as cur:
-            # Basic counts
-            cur.execute("SELECT COUNT(*) FROM movies;")
-            stats["movie_count"] = cur.fetchone()[0]
-
-            cur.execute("SELECT COUNT(*) FROM series;")
-            stats["series_count"] = cur.fetchone()[0]
 
             # Last update timestamp
             cur.execute("SELECT MAX(timestamp) FROM update_logs;")
@@ -184,16 +181,6 @@ async def read_root(request: Request):
             )
             stats["recent_updates"] = cur.fetchone()[0]
 
-            # Freshness breakdown
-            cur.execute(
-                "SELECT last_updated FROM movies UNION ALL SELECT last_updated FROM series;"
-            )
-            freshness_counts = {"fresh": 0, "moderate": 0, "stale": 0}
-            for row in cur.fetchall():
-                freshness = classify_freshness(row[0])
-                freshness_counts[freshness] += 1
-            stats["freshness"] = freshness_counts
-
             # Most updated title
             cur.execute("""
                 SELECT movie_id, COUNT(*) AS changes
@@ -203,16 +190,6 @@ async def read_root(request: Request):
                 LIMIT 1;
             """)
             stats["most_updated_id"] = cur.fetchone()[0]
-
-            # Most changed fields
-            cur.execute("""
-                SELECT field_name, COUNT(*) AS freq
-                FROM update_logs
-                GROUP BY field_name
-                ORDER BY freq DESC
-                LIMIT 5;
-            """)
-            stats["top_fields"] = cur.fetchall()
 
             # Missing key fields
             cur.execute(
@@ -228,11 +205,10 @@ async def read_root(request: Request):
             # Orphaned logs
             cur.execute("""
                 SELECT COUNT(*) FROM update_logs
-                WHERE movie_id NOT IN (
-                    SELECT id FROM movies
-                    UNION
-                    SELECT series_id FROM series
-                );
+                WHERE content_id NOT IN (
+                SELECT movie_id FROM movies
+                UNION
+                SELECT series_id FROM series);
             """)
             stats["orphaned_logs"] = cur.fetchone()[0]
 
@@ -370,6 +346,7 @@ async def read_root(request: Request):
             "trending_titles": trending_titles,
         },
     )
+
 
 
 @app.post("/search", response_class=HTMLResponse)
