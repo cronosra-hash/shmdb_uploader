@@ -1,6 +1,7 @@
 import psycopg2.extras
 from pathlib import Path
 from db.connection import get_connection
+from zoneinfo import ZoneInfo
 
 QUERIES_DIR = Path(__file__).parent.parent / "queries"
 
@@ -39,11 +40,16 @@ def get_popular_genres():
 def get_hidden_gems():
     return fetch_stat("hidden_gems")
 
-def get_top_fields():
-    return fetch_stat("top_fields")
+
+
+
+#  Statistics Page
 
 def get_new_releases():
     return []
+
+def get_top_fields():
+    return fetch_stat("top_fields")
 
 def get_movie_count():
     result = fetch_stat("movie_count")
@@ -52,3 +58,14 @@ def get_movie_count():
 def get_series_count():
     result = fetch_stat("series_count")
     return result[0]["count"]
+
+def get_last_update():
+    result = fetch_stat("last_update")
+    if result:
+        dt = result[0]["max"]
+        return dt.astimezone(ZoneInfo("Europe/London"))
+    return None
+
+
+
+

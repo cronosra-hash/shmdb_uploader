@@ -10,8 +10,11 @@
   <!-- 📈 Updates -->
   <div class="stat-block">
     <h4>📈 Updates</h4>
-    <p>Last: <span class="timestamp">{{ stats.last_update.strftime('%Y-%m-%d %H:%M:%S') if stats.last_update else 'N/A'
-        }}</span></p>
+    <p>Last: <span class="timestamp">
+      {{ last_update.strftime('%d/%m/%y, %H:%M:%S') if last_update else 'Never updated' }}
+    </span></p>
+
+
     <p>7-Day: <strong>{{ stats.recent_updates }}</strong></p>
     <p>ID: <strong>{{ stats.most_updated_id }}</strong></p>
   </div>

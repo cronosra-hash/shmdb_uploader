@@ -121,6 +121,7 @@ def get_stats_context(request: Request):
         "top_fields": stats.get_top_fields(),
         "movie_count": stats.get_movie_count(),
         "series_count": stats.get_series_count(),
+        "last_update": stats.get_last_update(),
         "stats": {
             "active_release_years": stats.get_active_release_years(),
             "hidden_gems": stats.get_hidden_gems(),
