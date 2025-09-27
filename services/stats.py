@@ -66,6 +66,45 @@ def get_last_update():
         return dt.astimezone(ZoneInfo("Europe/London"))
     return None
 
+def get_recent_updates():
+    result = fetch_stat("recent_updates")
+    return result[0]["recent_updates"]
 
+def get_most_updated_title():
+    result = fetch_stat("most_updated_title")
+    return {
+    "most_updated_title": result[0]["most_updated_title"],
+    "title_type": result[0]["title_type"],
+    "title_changes": result[0]["title_changes"]
+} if result else None
 
+def get_movies_missing_fields():
+    result = fetch_stat("movies_missing_fields")
+    return {
+        "missing_overview": result[0]["missing_overview"],
+        "missing_release_date": result[0]["missing_release_date"],
+        "missing_runtime": result[0]["missing_runtime"],
+        "missing_poster_path": result[0]["missing_poster_path"],
+        "missing_original_language": result[0]["missing_original_language"],
+        "missing_status": result[0]["missing_status"],
+        "missing_imdb": result[0]["missing_imdb"],
+        "missing_budget": result[0]["missing_budget"],
+        "missing_revenue": result[0]["missing_revenue"]
+    } if result else None
 
+def get_series_missing_fields():
+    result = fetch_stat("series_missing_fields")
+    return {
+        "missing_overview": result[0]["missing_overview"],
+        "missing_first_air_date": result[0]["missing_first_air_date"],
+        "missing_poster_path": result[0]["missing_poster_path"],
+        "missing_original_language": result[0]["missing_original_language"],
+        "missing_status": result[0]["missing_status"],
+        "missing_imdb": result[0]["missing_imdb"],
+        "missing_seasons": result[0]["missing_seasons"],
+        "missing_episodes": result[0]["missing_episodes"]
+    } if result else None
+
+def get_orphaned_logs():
+    result = fetch_stat("orphaned_logs")
+    return result[0].get("orphaned_logs", 0) if result else 0

@@ -122,6 +122,11 @@ def get_stats_context(request: Request):
         "movie_count": stats.get_movie_count(),
         "series_count": stats.get_series_count(),
         "last_update": stats.get_last_update(),
+        "recent_updates": stats.get_recent_updates(),
+        "most_updated_title": stats.get_most_updated_title(),
+        "movies_missing_fields": stats.get_movies_missing_fields(),
+        "series_missing_fields": stats.get_series_missing_fields(),
+        "orphaned_logs": stats.get_orphaned_logs(),
         "stats": {
             "active_release_years": stats.get_active_release_years(),
             "hidden_gems": stats.get_hidden_gems(),
@@ -170,39 +175,6 @@ async def read_root(request: Request):
     stats = {}
     try:
         with conn.cursor() as cur:
-
-            # Last update timestamp
-            cur.execute("SELECT MAX(timestamp) FROM update_logs;")
-            stats["last_update"] = cur.fetchone()[0]
-
-            # Recent updates
-            cur.execute(
-                "SELECT COUNT(*) FROM update_logs WHERE timestamp >= %s;",
-                (datetime.utcnow() - timedelta(days=7),),
-            )
-            stats["recent_updates"] = cur.fetchone()[0]
-
-            # Most updated title
-            cur.execute("""
-                SELECT movie_id, COUNT(*) AS changes
-                FROM update_logs
-                GROUP BY movie_id
-                ORDER BY changes DESC
-                LIMIT 1;
-            """)
-            stats["most_updated_id"] = cur.fetchone()[0]
-
-            # Missing key fields
-            cur.execute(
-                "SELECT COUNT(*) FROM movies WHERE overview IS NULL OR release_date IS NULL;"
-            )
-            stats["movies_missing_fields"] = cur.fetchone()[0]
-
-            cur.execute(
-                "SELECT COUNT(*) FROM series WHERE overview IS NULL OR first_air_date IS NULL;"
-            )
-            stats["series_missing_fields"] = cur.fetchone()[0]
-
             # Orphaned logs
             cur.execute("""
                 SELECT COUNT(*) FROM update_logs

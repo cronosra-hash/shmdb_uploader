@@ -11,12 +11,11 @@
   <div class="stat-block">
     <h4>📈 Updates</h4>
     <p>Last: <span class="timestamp">
-      {{ last_update.strftime('%d/%m/%y, %H:%M:%S') if last_update else 'Never updated' }}
-    </span></p>
-
-
-    <p>7-Day: <strong>{{ stats.recent_updates }}</strong></p>
-    <p>ID: <strong>{{ stats.most_updated_id }}</strong></p>
+        {{ last_update.strftime('%d/%m/%y, %H:%M:%S') if last_update else 'Never updated' }}
+      </span></p>
+    <p>Updates in last 7 days: <span class="count">{{ recent_updates }}</span></p>
+    <p>Title: <strong>{{ most_updated_title.most_updated_title }}</strong> ({{ most_updated_title.title_type }}) Count:
+      {{ most_updated_title.title_changes }}</p>
   </div>
 
   <!-- 🧪 Freshness -->
@@ -38,8 +37,26 @@
   <!-- 🧹 Quality -->
   <div class="stat-block">
     <h4>🧹 Quality</h4>
-    <p>Missing Movies: <strong>{{ stats.movies_missing_fields | default(0) }}</strong></p>
-    <p>Missing Series: <strong>{{ stats.series_missing_fields | default(0) }}</strong></p>
-    <p>Orphaned Logs: <strong>{{ stats.orphaned_logs | default(0) }}</strong></p>
+    <p>Orphaned Logs: <strong>{{ orphaned_logs.orphaned_logs | default(0) }}</strong></p>
+    <h4>Movies Missing Key Fields</h4>
+    <div class="badge">Missing Overview: {{ movies_missing_fields.missing_overview }}</div>
+    <div class="badge">Missing Release Date: {{ movies_missing_fields.missing_release_date }}</div>
+    <div class="badge">Missing Runtime: {{ movies_missing_fields.missing_runtime }}</div>
+    <div class="badge">Missing Poster: {{ movies_missing_fields.missing_poster_path }}</div>
+    <div class="badge">Missing Language: {{ movies_missing_fields.missing_original_language }}</div>
+    <div class="badge">Missing Status: {{ movies_missing_fields.missing_status }}</div>
+    <div class="badge">Missing IMDb ID: {{ movies_missing_fields.missing_imdb }}</div>
+    <div class="badge">Missing Budget: {{ movies_missing_fields.missing_budget }}</div>
+    <div class="badge">Missing Revenue: {{ movies_missing_fields.missing_revenue }}</div>
+    <h4>Series Missing Key Fields</h4>
+    <div class="badge">Missing Overview: {{ series_missing_fields.missing_overview }}</div>
+    <div class="badge">Missing First Air Date: {{ series_missing_fields.missing_first_air_date }}</div>
+    <div class="badge">Missing Poster: {{ series_missing_fields.missing_poster_path }}</div>
+    <div class="badge">Missing Language: {{ series_missing_fields.missing_original_language }}</div>
+    <div class="badge">Missing Status: {{ series_missing_fields.missing_status }}</div>
+    <div class="badge">Missing IMDb ID: {{ series_missing_fields.missing_imdb }}</div>
+    <div class="badge">Missing Seasons: {{ series_missing_fields.missing_seasons }}</div>
+    <div class="badge">Missing Episodes: {{ series_missing_fields.missing_episodes }}</div>
   </div>
+
 </div>
