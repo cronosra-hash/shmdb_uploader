@@ -7,7 +7,7 @@
       {{ article.title or 'Untitled' }}
     </a>
     <span class="news-meta">
-      {{ article.published.strftime('%Y-%m-%d') if article.published else 'Unknown Date' }} —
+      {{ article.published.strftime('%d-%m-%Y') if article.published else 'Unknown Date' }} —
       {{ article.source or 'Unknown Source' }}
     </span>
   </li>
@@ -16,7 +16,7 @@
 
 <p class="news-count">📰 Showing {{ articles|length }} articles</p>
 <div class="news-footer">
-  <small>Last updated: {{ articles[0].published.strftime('%Y-%m-%d %H:%M') if articles }}</small>
+  <small>Last updated: {{ articles[0].published.strftime('%d %b %Y, %H:%M') if articles }}</small>
 </div>
 {% else %}
 <div class="news-empty">

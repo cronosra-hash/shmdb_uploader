@@ -2,6 +2,8 @@
 import os
 import sys
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
 
 # ─── Third-Party Imports ─────────────────────────────────────────────────────
 import requests
@@ -757,7 +759,7 @@ def get_cinema_releases(month: int = None, year: int = None) -> List[Dict]:
                     distributor = details["production_companies"][0].get("name", "")
                 releases.append({
                     "title": movie["title"],
-                    "release_date": uk_date,
+                    "release_date": format_local(uk_date),
                     "runtime": details.get("runtime", "Unknown"),
                     "certification": release_info.get("certification", "Unrated"),
                     "distributor": distributor or "Unknown",
@@ -817,7 +819,7 @@ def get_tv_releases(month: int = None, year: int = None) -> List[Dict]:
 
             releases.append({
                 "title": s["name"],
-                "release_date": s.get("first_air_date", "Unknown"),
+                "release_date": format_local(s.get("first_air_date")),
                 "platform": broadcaster,
                 "genre": " / ".join([genre_map.get(gid, "Unknown") for gid in s.get("genre_ids", [])]),
                 "poster_path": s.get("poster_path"),
@@ -826,3 +828,11 @@ def get_tv_releases(month: int = None, year: int = None) -> List[Dict]:
             })
 
     return releases
+
+def format_local(date_str: str, fmt="%d %b %Y") -> str:
+    try:
+        dt = datetime.strptime(date_str, "%Y-%m-%d")
+        return dt.replace(tzinfo=ZoneInfo("UTC")).astimezone(ZoneInfo("Europe/London")).strftime(fmt)
+    except (TypeError, ValueError):
+        return "Unknown"
+

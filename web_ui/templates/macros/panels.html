@@ -100,7 +100,7 @@
           {% for show in shows %}
           <tr>
             <td><a href="{{ show.source_url }}" target="_blank">{{ show.title }}</a></td>
-            <td>{{ show.release_date or "Unknown" }}</td>
+            <td>{{ show.release_date }}</td>
             <td>{{ format_runtime(show.runtime) }}</td>
             <td>{{ show.platform or "Unknown" }}</td>
             <td>{{ show.genre or "Unknown" }}</td>
