@@ -31,11 +31,18 @@ def get_title_by_id(title_id: int):
     base["genres"] = list({row["name"] for row in rows if row["name"]})
     return base
 
+DATE_FIELDS = {"release_date", "first_air_date"}
+NUMERIC_FIELDS = {"budget", "revenue", "runtime", "vote_count", "number_of_seasons", "number_of_seasons"}
 
 def get_movie_titles_missing(field: str):
     column = MOVIE_FIELD_MAP.get(field)
     if not column:
         raise ValueError(f"Invalid field: {field}")
+
+    if column in NUMERIC_FIELDS or column in DATE_FIELDS:
+        condition = f"{column} IS NULL"
+    else:
+        condition = f"{column} IS NULL OR {column} = ''"
 
     query = f"""
         SELECT
@@ -51,7 +58,7 @@ def get_movie_titles_missing(field: str):
             budget,
             revenue
         FROM movies
-        WHERE {column} IS NULL OR {column} = ''
+        WHERE {condition}
     """
     db = get_connection()
     with db.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
@@ -75,6 +82,11 @@ def get_tv_titles_missing(field: str):
     if not column:
         raise ValueError(f"Invalid field: {field}")
 
+    if column in NUMERIC_FIELDS or column in DATE_FIELDS:
+        condition = f"{column} IS NULL"
+    else:
+        condition = f"{column} IS NULL OR {column} = ''"
+
     query = f"""
         SELECT
             series_id,
@@ -88,7 +100,7 @@ def get_tv_titles_missing(field: str):
 			number_of_seasons,
 			number_of_episodes
         FROM series
-        WHERE {column} IS NULL OR {column} = ''
+        WHERE {condition}
     """
     db = get_connection()
     with db.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:

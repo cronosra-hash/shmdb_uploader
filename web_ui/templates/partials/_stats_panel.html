@@ -38,34 +38,43 @@
   <div class="stat-block">
     <h4>🧹 Quality</h4>
     <p>Orphaned Logs: <strong>{{ orphaned_logs.orphaned_logs | default(0) }}</strong></p>
-    <h4>Movies Missing Key Fields</h4>
-    <div class="badge">Missing Overview: {{ movies_missing_fields.missing_overview }}</div>
-    <div class="badge">Missing Release Date: {{ movies_missing_fields.missing_release_date }}</div>
-    <div class="badge">Missing Runtime: {{ movies_missing_fields.missing_runtime }}</div>
-    <div class="badge">Missing Poster: {{ movies_missing_fields.missing_poster_path }}</div>
-    <div class="badge">Missing Language: {{ movies_missing_fields.missing_original_language }}</div>
-    <div class="badge">Missing Status: {{ movies_missing_fields.missing_status }}</div>
 
+    <h4>Movies Missing Key Fields</h4>
+    <a href="{{ url_for('missing_movies', field='missing_overview') }}" class="badge">
+      Missing Overview: {{ movies_missing_fields.missing_overview }}</a>
+    <a href="{{ url_for('missing_movies', field='missing_release_date') }}" class="badge">
+      Missing Release Date: {{ movies_missing_fields.missing_release_date }}</a>
+    <a href="{{ url_for('missing_movies', field='missing_runtime') }}" class="badge">
+      Missing Runtime: {{ movies_missing_fields.missing_runtime }}</a>
+    <a href="{{ url_for('missing_movies', field='missing_poster_path') }}" class="badge">
+      Missing Poster: {{ movies_missing_fields.missing_poster_path }}</a>
+    <a href="{{ url_for('missing_movies', field='missing_original_language') }}" class="badge">
+      Missing Language: {{ movies_missing_fields.missing_original_language }}</a>
+    <a href="{{ url_for('missing_movies', field='missing_status') }}" class="badge">
+      Missing Status: {{ movies_missing_fields.missing_status }}</a>
     <a href="{{ url_for('missing_movies', field='missing_imdb') }}" class="badge">
       Missing IMDb ID: {{ movies_missing_fields.missing_imdb }}</a>
+    <a href="{{ url_for('missing_movies', field='missing_budget') }}" class="badge">
+      Missing Budget: {{ movies_missing_fields.missing_budget }}</a>
+    <a href="{{ url_for('missing_movies', field='missing_revenue') }}" class="badge">
+      Missing Revenue: {{ movies_missing_fields.missing_revenue }}</a>
 
-    <div class="badge">Missing Budget: {{ movies_missing_fields.missing_budget }}</div>
-    <div class="badge">Missing Revenue: {{ movies_missing_fields.missing_revenue }}</div>
     <h4>Series Missing Key Fields</h4>
-    <div class="badge">Missing Overview: {{ series_missing_fields.missing_overview }}</div>
-    <div class="badge">Missing First Air Date: {{ series_missing_fields.missing_first_air_date }}</div>
-    <div class="badge">Missing Poster: {{ series_missing_fields.missing_poster_path }}</div>
-    <div class="badge">Missing Language: {{ series_missing_fields.missing_original_language }}</div>
-    <div class="badge">Missing Status: {{ series_missing_fields.missing_status }}</div>
-
-   <a href="{{ url_for('missing_tv', field='missing_imdb') }}" class="badge">
+    <a href="{{ url_for('missing_tv', field='missing_overview') }}" class="badge">
+      Missing Overview: {{ series_missing_fields.missing_overview }}</a>
+    <a href="{{ url_for('missing_tv', field='missing_first_air_date') }}" class="badge">
+      Missing First Air Date: {{ series_missing_fields.missing_first_air_date }}</a>
+    <a href="{{ url_for('missing_tv', field='missing_poster_path') }}" class="badge">
+      Missing Poster: {{ series_missing_fields.missing_poster_path }}</a>
+    <a href="{{ url_for('missing_tv', field='missing_original_language') }}" class="badge">
+      Missing Language: {{ series_missing_fields.missing_original_language }}</a>
+    <a href="{{ url_for('missing_tv', field='missing_status') }}" class="badge">
+      Missing Status: {{ series_missing_fields.missing_status }}</a>
+    <a href="{{ url_for('missing_tv', field='missing_imdb') }}" class="badge">
       Missing IMDb ID: {{ series_missing_fields.missing_imdb }}</a>
-
-    <div class="badge">Missing Seasons: {{ series_missing_fields.missing_seasons }}</div>
-    <div class="badge">Missing Episodes: {{ series_missing_fields.missing_episodes }}</div>
+    <a href="{{ url_for('missing_tv', field='missing_seasons') }}" class="badge">
+      Missing Seasons: {{ series_missing_fields.missing_seasons }}</a>
+    <a href="{{ url_for('missing_tv', field='missing_episodes') }}" class="badge">
+      Missing Episodes {{ series_missing_fields.missing_episodes }}</a>
   </div>
-
-
-
-
 </div>
