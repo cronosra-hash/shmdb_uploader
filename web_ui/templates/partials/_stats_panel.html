@@ -45,7 +45,10 @@
     <div class="badge">Missing Poster: {{ movies_missing_fields.missing_poster_path }}</div>
     <div class="badge">Missing Language: {{ movies_missing_fields.missing_original_language }}</div>
     <div class="badge">Missing Status: {{ movies_missing_fields.missing_status }}</div>
-    <div class="badge">Missing IMDb ID: {{ movies_missing_fields.missing_imdb }}</div>
+
+    <a href="{{ url_for('missing_movies', field='missing_imdb') }}" class="badge">
+      Missing IMDb ID: {{ movies_missing_fields.missing_imdb }}</a>
+
     <div class="badge">Missing Budget: {{ movies_missing_fields.missing_budget }}</div>
     <div class="badge">Missing Revenue: {{ movies_missing_fields.missing_revenue }}</div>
     <h4>Series Missing Key Fields</h4>
@@ -54,9 +57,15 @@
     <div class="badge">Missing Poster: {{ series_missing_fields.missing_poster_path }}</div>
     <div class="badge">Missing Language: {{ series_missing_fields.missing_original_language }}</div>
     <div class="badge">Missing Status: {{ series_missing_fields.missing_status }}</div>
-    <div class="badge">Missing IMDb ID: {{ series_missing_fields.missing_imdb }}</div>
+
+   <a href="{{ url_for('missing_tv', field='missing_imdb') }}" class="badge">
+      Missing IMDb ID: {{ series_missing_fields.missing_imdb }}</a>
+
     <div class="badge">Missing Seasons: {{ series_missing_fields.missing_seasons }}</div>
     <div class="badge">Missing Episodes: {{ series_missing_fields.missing_episodes }}</div>
   </div>
+
+
+
 
 </div>

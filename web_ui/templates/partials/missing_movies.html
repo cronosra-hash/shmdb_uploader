@@ -1,0 +1,8 @@
+<h2>Movies missing {{ field.replace('_', ' ').title() }}</h2>
+<ul>
+  {% for movie in movies %}
+    <li>{{ movie.movie_title or "Untitled" }} (ID: {{ movie.movie_id or "?" }})</li>
+  {% else %}
+    <li>No movies missing {{ field }}</li>
+  {% endfor %}
+</ul>

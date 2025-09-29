@@ -33,7 +33,7 @@ def get_freshness_summary():
     for row in rows:
         category = classify_freshness(row["last_updated"])
         results.append({
-            "title": row["title"],
+            "title": row["movie_title"],
             "freshness": category,
             "last_updated": format_local(row["last_updated"])
         })

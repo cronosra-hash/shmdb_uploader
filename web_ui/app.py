@@ -24,7 +24,7 @@ from tmdb.movie_api import get_movie_data
 from tmdb.tv_api import fetch_series, fetch_all_episodes
 from services import stats
 from services.freshness import get_freshness_summary  # or wherever you define it
-from services.titles import get_title_by_id
+from services.titles import get_title_by_id, get_movie_titles_missing, get_tv_titles_missing
 from services.diagnostics import wrap_query
 from web_ui.filters import datetimeformat, ago, to_timezone, timestamp_color
 from routes import news
@@ -53,6 +53,23 @@ router = APIRouter()
 
 app.include_router(news.router)
 
+@app.get("/missing/{field}", name="missing_movies")
+async def missing_movies(request: Request, field: str):
+    movies = get_movie_titles_missing(field)
+    return templates.TemplateResponse("partials/missing_movies.html", {
+        "request": request,
+        "field": field,
+        "movies": movies
+    })
+
+@app.get("/missing_tv/{field}", name="missing_tv")
+async def missing_tv(request: Request, field: str):
+    titles = get_tv_titles_missing(field)
+    return templates.TemplateResponse("partials/missing_tv.html", {
+        "request": request,
+        "field": field,
+        "titles": titles
+    })
 
 @router.get("/title/{title_id}", response_class=HTMLResponse)
 async def title_detail(request: Request, title_id: int):

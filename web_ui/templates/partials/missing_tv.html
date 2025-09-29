@@ -1,0 +1,8 @@
+<h2>TV Series missing {{ field.replace('_', ' ').title() }}</h2>
+<ul>
+  {% for tv in titles %}
+    <li>{{ tv.series_name or "[No Title]" }} (ID: {{ tv.series_id or "?" }})</li>
+  {% else %}
+    <li>No TV series missing {{ field }}</li>
+  {% endfor %}
+</ul>

@@ -30,3 +30,80 @@ def get_title_by_id(title_id: int):
     base = rows[0]
     base["genres"] = list({row["name"] for row in rows if row["name"]})
     return base
+
+
+def get_movie_titles_missing(field: str):
+    column = MOVIE_FIELD_MAP.get(field)
+    if not column:
+        raise ValueError(f"Invalid field: {field}")
+
+    query = f"""
+        SELECT
+	        movie_id,
+            movie_title,
+            overview,
+            release_date,
+			runtime,
+            poster_path,
+			original_language,
+            status,
+            imdb_id,
+            budget,
+            revenue
+        FROM movies
+        WHERE {column} IS NULL OR {column} = ''
+    """
+    db = get_connection()
+    with db.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()
+
+MOVIE_FIELD_MAP = {
+    "missing_overview": "overview",
+    "missing_release_date": "release_date",
+    "missing_runtime": "runtime",
+    "missing_poster_path": "poster_path",
+    "missing_original_language": "original_language",
+    "missing_status": "status",
+    "missing_imdb": "imdb_id",
+    "missing_budget": "budget",
+    "missing_revenue": "revenue",
+}
+
+def get_tv_titles_missing(field: str):
+    column = TV_FIELD_MAP.get(field)
+    if not column:
+        raise ValueError(f"Invalid field: {field}")
+
+    query = f"""
+        SELECT
+            series_id,
+            series_name,
+			overview,
+			first_air_date,
+			poster_path,
+			original_language,
+			status,
+			imdb_id,
+			number_of_seasons,
+			number_of_episodes
+        FROM series
+        WHERE {column} IS NULL OR {column} = ''
+    """
+    db = get_connection()
+    with db.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()
+
+TV_FIELD_MAP = {
+    "missing_overview": "overview",
+    "missing_first_air_date": "first_air_date",
+    "missing_runtime": "episode_run_time",
+    "missing_poster_path": "poster_path",
+    "missing_original_language": "original_language",
+    "missing_status": "status",
+    "missing_imdb": "imdb_id",
+    "missing_network": "network",
+    "missing_number_of_episodes": "number_of_episodes",
+    "missing_number_of_seasons": "number_of_seasons"
+}
