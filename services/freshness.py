@@ -1,5 +1,6 @@
 from db.connection import get_connection
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 import psycopg2.extras
 
 def classify_freshness(last_updated):
@@ -14,18 +15,27 @@ def classify_freshness(last_updated):
     else:
         return "stale"
 
+def format_local(dt, fmt="%d %b %Y, %H:%M"):
+    if not isinstance(dt, datetime):
+        return "Unknown"
+    return dt.astimezone(ZoneInfo("Europe/London")).strftime(fmt)
+
 def get_freshness_summary():
     query = """
-        SELECT last_updated FROM movies WHERE last_updated IS NOT NULL;
+        SELECT movie_title, last_updated FROM movies WHERE last_updated IS NOT NULL;
     """
     db = get_connection()
     with db.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         cursor.execute(query)
         rows = cursor.fetchall()
 
-    summary = {"fresh": 0, "moderate": 0, "stale": 0}
+    results = []
     for row in rows:
         category = classify_freshness(row["last_updated"])
-        summary[category] += 1
+        results.append({
+            "title": row["title"],
+            "freshness": category,
+            "last_updated": format_local(row["last_updated"])
+        })
 
-    return summary
+    return results

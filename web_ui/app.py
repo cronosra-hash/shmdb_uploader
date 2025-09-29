@@ -381,6 +381,7 @@ def annotate_result(cur, result):
             **result,
             "exists": bool(row),
             "last_updated": last_updated,
+            "last_updated_local": format_local(last_updated),
             "freshness": classify_freshness(last_updated),
         }
 
@@ -829,10 +830,13 @@ def get_tv_releases(month: int = None, year: int = None) -> List[Dict]:
 
     return releases
 
-def format_local(date_str: str, fmt="%d %b %Y") -> str:
-    try:
-        dt = datetime.strptime(date_str, "%Y-%m-%d")
-        return dt.replace(tzinfo=ZoneInfo("UTC")).astimezone(ZoneInfo("Europe/London")).strftime(fmt)
-    except (TypeError, ValueError):
+def format_local(dt, fmt="%d %b %Y, %H:%M"):
+    if isinstance(dt, str):
+        try:
+            dt = datetime.fromisoformat(dt)
+        except ValueError:
+            return "Unknown"
+    if not isinstance(dt, datetime):
         return "Unknown"
+    return dt.astimezone(ZoneInfo("Europe/London")).strftime(fmt)
 

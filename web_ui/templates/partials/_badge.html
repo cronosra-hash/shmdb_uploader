@@ -17,7 +17,7 @@
   <!-- 🧪 Freshness Badge -->
   <span
     class="badge freshness {% if result.freshness == 'fresh' %}fresh{% elif result.freshness == 'moderate' %}moderate{% else %}stale{% endif %}"
-    title="Last updated: {{ result.updated_at }}"
+    title="Last updated: {{ result.last_updated_local }}"
     aria-label="Freshness status for {{ result.title }}"
   >
     {% if result.freshness == 'fresh' %}
