@@ -5,7 +5,7 @@
     {% if title.poster_path %}
     <div class="flex-shrink-0">
       <img src="https://image.tmdb.org/t/p/w300{{ title.poster_path }}"
-           alt="Poster for {{ title.title }}"
+           alt="Poster for {{ title.movie_title or 'Untitled' }}"
            class="rounded-lg h-auto max-h-96 w-auto" />
     </div>
     {% endif %}
@@ -14,16 +14,20 @@
     <div class="flex-grow space-y-4">
       <!-- Title & Year -->
       <div class="flex items-center justify-between">
-        <h2 class="text-3xl font-bold">{{ title.title }}</h2>
-        <span class="text-sm">📅 {{ title.release_year }}</span>
+        <h2 class="text-3xl font-bold">{{ title.movie_title }}</h2>
+        <span class="text-sm">📅 {{ title.release_year or '—' }}</span>
       </div>
 
       <!-- Runtime & Genres -->
       <div class="flex flex-wrap gap-3 text-sm">
-        <span>⏱️ {{ title.runtime }} min</span>
-        {% for genre in title.genres %}
-          <span class="badge">{{ genre }}</span>
-        {% endfor %}
+        <span>⏱️ {{ title.runtime if title.runtime else '—' }} min</span>
+        {% if title.genres %}
+          {% for genre in title.genres %}
+            <span class="badge">{{ genre }}</span>
+          {% endfor %}
+        {% else %}
+          <span class="text-gray-500 italic">No genres listed</span>
+        {% endif %}
       </div>
 
       <!-- Ratings -->
@@ -33,7 +37,7 @@
         {% else %}
           <span class="text-gray-500 italic">Unrated</span>
         {% endif %}
-        <span>📝 {{ title.vote_count }} reviews</span>
+        <span>📝 {{ title.vote_count if title.vote_count is not none else '0' }} reviews</span>
       </div>
     </div>
   </div>

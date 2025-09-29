@@ -83,9 +83,10 @@ async def title_detail(request: Request, title_id: int):
         "title_detail.html",
         {
             "request": request,
-            "movie_title": title,
+            "title": title,
             "cast": cast,
             "diagnostics": diagnostics,
+            "now": datetime.now()
             # "reviews": reviews
         },
     )

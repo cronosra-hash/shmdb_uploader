@@ -5,19 +5,19 @@ import psycopg2.extras
 def get_title_by_id(title_id: int):
     query = """
         SELECT
-        m.movie_id,
-        m.movie_title,
-        mm.release_year,
-        m.runtime,
-        m.vote_average,
-        m.vote_count,
-        g.genre_name,
-        m.poster_path
-    FROM movies m
-    LEFT JOIN movie_genres mg ON mg.movie_id = m.movie_id
-    LEFT JOIN genres g ON g.genre_id = mg.genre_id
-	JOIN movie_metadata mm ON mm.movie_id = m.movie_id
-    WHERE m.movie_id = %s
+            m.movie_id,
+            m.movie_title,
+            mm.release_year,
+            m.runtime,
+            m.vote_average,
+            m.vote_count,
+            g.genre_name,
+            m.poster_path
+        FROM movies m
+        LEFT JOIN movie_genres mg ON mg.movie_id = m.movie_id
+        LEFT JOIN genres g ON g.genre_id = mg.genre_id
+        JOIN movie_metadata mm ON mm.movie_id = m.movie_id
+        WHERE m.movie_id = %s
     """
     db = get_connection()
     with db.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
@@ -28,8 +28,10 @@ def get_title_by_id(title_id: int):
         return None
 
     base = rows[0]
-    base["genres"] = list({row["name"] for row in rows if row["name"]})
+    base["genres"] = list({row["genre_name"] for row in rows if row.get("genre_name")})
+    base["title"] = base["movie_title"]
     return base
+
 
 DATE_FIELDS = {"release_date", "first_air_date"}
 NUMERIC_FIELDS = {"budget", "revenue", "runtime", "vote_count", "number_of_seasons", "number_of_seasons"}
