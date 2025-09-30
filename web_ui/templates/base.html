@@ -22,14 +22,15 @@
         <div class="env-tag">{{ app_env | upper }}</div>
       </div>
       <div class="top-bar-right">
-        <form action="{{ url_for('search') }}" method="get" class="search-form">
+        <form action="{{ url_for('db_search_form') }}" method="get" class="search-form">
           <input type="text" name="query" placeholder="Search records..." class="search-box" />
         </form>
         <div class="dropdown">
           <button class="dropdown-toggle">Menu ▾</button>
           <div class="dropdown-content">
-            <a href="{{ url_for('uploader') }}">Uploader</a>
+            <a href="{{ url_for('db_search_form') }}">SHMDB Search</a>
             <a href="{{ url_for('statistics') }}">Statistics</a>
+            <a href="{{ url_for('uploader') }}">Uploader</a>
             {% block extra_menu_items %}{% endblock %}
           </div>
         </div>

@@ -1,0 +1,14 @@
+<h2>Search Results</h2>
+<ul>
+  {% for result in results %}
+    <li>
+      <a href="/title/{{ result.type }}/{{ result.id }}">
+        {{ result.title }}
+        {% if result.release_year %} ({{ result.release_year }}){% endif %}
+        — {% if result.type == 'movie' %}🎬 Movie{% else %}📺 TV Series{% endif %}
+      </a>
+    </li>
+  {% else %}
+    <li>No results found for "{{ query.title }}" in {{ query.year or 'any year' }}</li>
+  {% endfor %}
+</ul>

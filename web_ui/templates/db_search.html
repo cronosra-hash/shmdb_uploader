@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-wrapper">
+<form method="post" action="/db_search" class="space-y-4">
+  <div>
+    <label for="title">Movie/Series Name</label>
+    <input type="text" name="title" id="title" class="input" />
+  </div>
+  <div>
+    <label for="year">Year of Release</label>
+    <input type="text" name="year" id="year" class="input" />
+  </div>
+  <button type="submit" class="btn">Search</button>
+</form>
+</div>
+{% endblock %}

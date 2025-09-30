@@ -6,10 +6,11 @@ from zoneinfo import ZoneInfo
 
 
 # ─── Third-Party Imports ─────────────────────────────────────────────────────
+from psycopg2.extras import RealDictCursor
 import requests
 from typing import List, Dict
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request, APIRouter
+from fastapi import FastAPI, Request, APIRouter, Form
 from fastapi.responses import HTMLResponse
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -24,7 +25,7 @@ from tmdb.movie_api import get_movie_data
 from tmdb.tv_api import fetch_series, fetch_all_episodes
 from services import stats
 from services.freshness import get_freshness_summary  # or wherever you define it
-from services.titles import get_title_by_id, get_movie_titles_missing, get_tv_titles_missing
+from services.titles import get_title_by_id, get_series_by_id, get_movie_titles_missing, get_tv_titles_missing
 from services.diagnostics import wrap_query
 from web_ui.filters import datetimeformat, ago, to_timezone, timestamp_color
 from routes import news
@@ -71,13 +72,87 @@ async def missing_tv(request: Request, field: str):
         "titles": titles
     })
 
-@router.get("/title/{title_id}", response_class=HTMLResponse)
-async def title_detail(request: Request, title_id: int):
-    diagnostics = wrap_query("get_title_by_id", lambda: [get_title_by_id(title_id)])
+@router.get("/db_search", response_class=HTMLResponse)
+async def db_search_form(request: Request):
+    return templates.TemplateResponse("db_search.html", {"request": request,"now": datetime.now()})
+
+@router.post("/db_search", response_class=HTMLResponse)
+async def db_search_results(request: Request, title: str = Form(""), year: str = Form("")):
+    title = title.strip()
+    year = year.strip()
+
+    conditions = []
+    params = []
+
+    # Build WHERE clause for both queries
+    movie_conditions = []
+    series_conditions = []
+
+    if title:
+        movie_conditions.append("m.movie_title ILIKE %s")
+        series_conditions.append("s.series_name ILIKE %s")
+        params.extend([f"%{title}%", f"%{title}%"])
+
+    if year:
+        try:
+            year_int = int(year)
+            movie_conditions.append("mm.release_year = %s")
+            series_conditions.append("sm.release_year = %s")
+            params.extend([year_int, year_int])
+        except ValueError:
+            return templates.TemplateResponse("db_search_results.html", {
+                "request": request,
+                "results": [],
+                "query": {"title": title, "year": year},
+                "error": "Year must be a valid number",
+                "now": datetime.now()
+            })
+
+    movie_where = " AND ".join(movie_conditions) if movie_conditions else "TRUE"
+    series_where = " AND ".join(series_conditions) if series_conditions else "TRUE"
+
+    query = f"""
+        SELECT m.movie_id AS id, m.movie_title AS title, mm.release_year, 'movie' AS type
+        FROM movies m
+        JOIN movie_metadata mm ON mm.movie_id = m.movie_id
+        WHERE {movie_where}
+
+        UNION
+
+        SELECT s.series_id AS id, s.series_name AS title, NULL as release_year, 'tv' AS type
+        FROM series s
+        WHERE {series_where}
+    """
+
+    db = get_connection()
+    with db.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute(query, params)
+        results = cursor.fetchall()
+
+    if len(results) == 1:
+        return RedirectResponse(url=f"/title/{results[0]['id']}", status_code=303)
+
+    return templates.TemplateResponse("db_search_results.html", {
+        "request": request,
+        "results": results,
+        "query": {"title": title, "year": year},
+        "now": datetime.now()
+    })
+
+
+
+@router.get("/title/{title_type}/{title_id}", response_class=HTMLResponse)
+async def title_detail(request: Request, title_type: str, title_id: int):
+    if title_type == "movie":
+        diagnostics = wrap_query("get_title_by_id", lambda: [get_title_by_id(title_id)])
+    elif title_type == "tv":
+        diagnostics = wrap_query("get_series_by_id", lambda: [get_series_by_id(title_id)])
+        print("Fetching series:", title_id)
+    else:
+        return HTMLResponse(content="Invalid title type", status_code=400)
 
     title = diagnostics["data"][0] if diagnostics["record_count"] else None
-    cast = get_cast_for_title(title_id)
-    # reviews = get_reviews_for_title(title_id)
+    cast = get_cast_for_title(title_id, title_type)
 
     return templates.TemplateResponse(
         "title_detail.html",
@@ -87,9 +162,9 @@ async def title_detail(request: Request, title_id: int):
             "cast": cast,
             "diagnostics": diagnostics,
             "now": datetime.now()
-            # "reviews": reviews
         },
     )
+
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
@@ -342,8 +417,8 @@ async def read_root(request: Request):
 
 
 
-@app.post("/search", response_class=HTMLResponse)
-async def search(request: Request):
+@app.post("/tmdb_search", response_class=HTMLResponse)
+async def tmdb_search(request: Request):
     form = await request.form()
     tmdb_id = form.get("tmdb_id")
     name = form.get("name")
@@ -358,7 +433,7 @@ async def search(request: Request):
     annotated_results = annotate_results_with_db_status(results)
 
     return templates.TemplateResponse(
-        "search_results.html", {"request": request, "results": annotated_results, "now": datetime.now()}
+        "tmdb_search_results.html", {"request": request, "results": annotated_results, "now": datetime.now()}
     )
 
 

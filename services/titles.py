@@ -28,9 +28,59 @@ def get_title_by_id(title_id: int):
         return None
 
     base = rows[0]
-    base["genres"] = list({row["genre_name"] for row in rows if row.get("genre_name")})
+
+    # Normalize keys for template compatibility
+    base["id"] = base["movie_id"]
     base["title"] = base["movie_title"]
+    base["type"] = "movie"
+    base["genres"] = list({row["genre_name"] for row in rows if row.get("genre_name")})
+
+    # Optional: fallback guards
+    base["release_year"] = base.get("release_year")
+    base["runtime"] = base.get("runtime")
+    base["vote_average"] = base.get("vote_average")
+    base["vote_count"] = base.get("vote_count")
+    base["poster_path"] = base.get("poster_path")
+
     return base
+
+def get_series_by_id(series_id: int):
+    query = """
+        SELECT
+            s.series_id,
+            s.series_name,
+            s.vote_average,
+            s.vote_count,
+            g.genre_name,
+            s.poster_path
+        FROM series s
+        LEFT JOIN series_genres sg ON sg.series_id = s.series_id
+        LEFT JOIN genres g ON g.genre_id = sg.genre_id
+        WHERE s.series_id = %s
+    """
+    db = get_connection()
+    with db.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+        cursor.execute(query, (series_id,))
+        rows = cursor.fetchall()
+
+    if not rows:
+        return None
+
+    base = rows[0]
+
+    # Normalize keys for template compatibility
+    base["id"] = base["series_id"]
+    base["title"] = base["series_name"]
+    base["type"] = "tv"
+    base["genres"] = list({row["genre_name"] for row in rows if row.get("genre_name")})
+
+    # Optional: fallback guards
+    base["vote_average"] = base.get("vote_average")
+    base["vote_count"] = base.get("vote_count")
+    base["poster_path"] = base.get("poster_path")
+
+    return base
+
 
 
 DATE_FIELDS = {"release_date", "first_air_date"}

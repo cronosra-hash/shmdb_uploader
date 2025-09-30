@@ -5,7 +5,7 @@
     {% if title.poster_path %}
     <div class="flex-shrink-0">
       <img src="https://image.tmdb.org/t/p/w300{{ title.poster_path }}"
-           alt="Poster for {{ title.movie_title or 'Untitled' }}"
+           alt="Poster for {{ title.title or 'Untitled' }}"
            class="rounded-lg h-auto max-h-96 w-auto" />
     </div>
     {% endif %}
@@ -14,7 +14,11 @@
     <div class="flex-grow space-y-4">
       <!-- Title & Year -->
       <div class="flex items-center justify-between">
-        <h2 class="text-3xl font-bold">{{ title.movie_title }}</h2>
+        <h2 class="text-3xl font-bold">
+          {{ title.title }}
+          {% if title.type == 'tv' %}<span class="text-sm ml-2 badge">📺 TV Series</span>{% endif %}
+          {% if title.type == 'movie' %}<span class="text-sm ml-2 badge">🎬 Movie</span>{% endif %}
+        </h2>
         <span class="text-sm">📅 {{ title.release_year or '—' }}</span>
       </div>
 
