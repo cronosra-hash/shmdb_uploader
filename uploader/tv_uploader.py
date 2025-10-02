@@ -133,7 +133,7 @@ def compare_fields(
 
 def extract_series_fields(series):
     return {
-        "name": series.get("title"),
+        "series_name": series.get("title") or series.get("name"),
         "overview": series.get("overview"),
         "first_air_date": parse_date(series.get("first_air_date")),
         "last_air_date": parse_date(series.get("last_air_date")),

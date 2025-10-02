@@ -52,7 +52,9 @@ def get_series_by_id(series_id: int):
             s.vote_average,
             s.vote_count,
             g.genre_name,
-            s.poster_path
+            s.poster_path,
+            s.first_air_date,
+            s.last_air_date
         FROM series s
         LEFT JOIN series_genres sg ON sg.series_id = s.series_id
         LEFT JOIN genres g ON g.genre_id = sg.genre_id
@@ -78,6 +80,7 @@ def get_series_by_id(series_id: int):
     base["vote_average"] = base.get("vote_average")
     base["vote_count"] = base.get("vote_count")
     base["poster_path"] = base.get("poster_path")
+    base["first_air_date"] = base.get("first_air_date")
 
     return base
 

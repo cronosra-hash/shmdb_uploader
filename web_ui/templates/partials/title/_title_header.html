@@ -1,12 +1,11 @@
 <div class="card fadeInUp p-6 bg-dark-glow rounded-lg">
   <div class="flex flex-col md:flex-row gap-6 items-start">
-    
+
     <!-- Poster -->
     {% if title.poster_path %}
     <div class="flex-shrink-0">
-      <img src="https://image.tmdb.org/t/p/w300{{ title.poster_path }}"
-           alt="Poster for {{ title.title or 'Untitled' }}"
-           class="rounded-lg h-auto max-h-96 w-auto" />
+      <img src="https://image.tmdb.org/t/p/w300{{ title.poster_path }}" alt="Poster for {{ title.title or 'Untitled' }}"
+        class="rounded-lg h-auto max-h-96 w-auto" />
     </div>
     {% endif %}
 
@@ -19,27 +18,42 @@
           {% if title.type == 'tv' %}<span class="text-sm ml-2 badge">📺 TV Series</span>{% endif %}
           {% if title.type == 'movie' %}<span class="text-sm ml-2 badge">🎬 Movie</span>{% endif %}
         </h2>
-        <span class="text-sm">📅 {{ title.release_year or '—' }}</span>
+        <span class="text-sm">
+          <span class="text-sm">
+            📅
+            {% if title.type == 'tv' %}
+            {% if title.first_air_date and title.last_air_date %}
+            {{ title.first_air_date.year }}–{{ title.last_air_date.year }}
+            {% elif title.first_air_date %}
+            {{ title.first_air_date.year }}
+            {% else %}
+            —
+            {% endif %}
+            {% else %}
+            {{ title.release_year or '—' }}
+            {% endif %}
+          </span>
+        </span>
       </div>
 
       <!-- Runtime & Genres -->
       <div class="flex flex-wrap gap-3 text-sm">
         <span>⏱️ {{ title.runtime if title.runtime else '—' }} min</span>
         {% if title.genres %}
-          {% for genre in title.genres %}
-            <span class="badge">{{ genre }}</span>
-          {% endfor %}
+        {% for genre in title.genres %}
+        <span class="badge">{{ genre }}</span>
+        {% endfor %}
         {% else %}
-          <span class="text-gray-500 italic">No genres listed</span>
+        <span class="text-gray-500 italic">No genres listed</span>
         {% endif %}
       </div>
 
       <!-- Ratings -->
       <div class="flex items-center gap-4 text-sm">
         {% if title.vote_average is defined and title.vote_average is not none %}
-          <span>⭐ {{ title.vote_average | round(1) }}</span>
+        <span>⭐ {{ title.vote_average | round(1) }}</span>
         {% else %}
-          <span class="text-gray-500 italic">Unrated</span>
+        <span class="text-gray-500 italic">Unrated</span>
         {% endif %}
         <span>📝 {{ title.vote_count if title.vote_count is not none else '0' }} reviews</span>
       </div>
