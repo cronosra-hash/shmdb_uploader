@@ -97,7 +97,7 @@ async def db_search_results(request: Request, title: str = Form(""), year: str =
         try:
             year_int = int(year)
             movie_conditions.append("mm.release_year = %s")
-            series_conditions.append("sm.release_year = %s")
+            series_conditions.append("DATE_PART('year', s.first_air_date) = %s")
             params.extend([year_int, year_int])
         except ValueError:
             return templates.TemplateResponse("db_search_results.html", {
@@ -119,7 +119,7 @@ async def db_search_results(request: Request, title: str = Form(""), year: str =
 
         UNION
 
-        SELECT s.series_id AS id, s.series_name AS title, NULL as release_year, 'tv' AS type
+        SELECT s.series_id AS id, s.series_name AS title, DATE_PART('year', s.first_air_date) AS release_year, 'tv' AS type
         FROM series s
         WHERE {series_where}
     """
