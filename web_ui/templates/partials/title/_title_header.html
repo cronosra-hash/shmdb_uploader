@@ -56,7 +56,16 @@
         <span class="text-gray-500 italic">Unrated</span>
         {% endif %}
         <span>📝 {{ title.vote_count if title.vote_count is not none else '0' }} reviews</span>
+
+        {% if title.type == 'tv' and series_rating %}
+        <div class="text-sm text-yellow-400 font-semibold">
+          ⭐ Series Average Rating: {{ series_rating }}
+        </div>
+        {% endif %}
+
       </div>
+
+
     </div>
   </div>
 </div>

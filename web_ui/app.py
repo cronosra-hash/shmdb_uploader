@@ -3,6 +3,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+from collections import defaultdict
 
 
 # ─── Third-Party Imports ─────────────────────────────────────────────────────
@@ -139,19 +140,74 @@ async def db_search_results(request: Request, title: str = Form(""), year: str =
         "now": datetime.now()
     })
 
-
-
 @router.get("/title/{title_type}/{title_id}", response_class=HTMLResponse)
 async def title_detail(request: Request, title_type: str, title_id: int):
+    db = get_connection()
+
     if title_type == "movie":
         diagnostics = wrap_query("get_title_by_id", lambda: [get_title_by_id(title_id)])
+        season_map = []
+        series_rating = None
+
     elif title_type == "tv":
         diagnostics = wrap_query("get_series_by_id", lambda: [get_series_by_id(title_id)])
-        print("Fetching series:", title_id)
+        title = diagnostics["data"][0] if diagnostics["record_count"] else None
+
+        with db.cursor(cursor_factory=RealDictCursor) as cur:
+            # Fetch seasons
+            cur.execute("""
+                SELECT season_id, season_number, air_date, poster_path, season_name, overview
+                FROM series_seasons
+                WHERE series_id = %s
+                ORDER BY season_number
+            """, (title_id,))
+            seasons = cur.fetchall()
+
+            season_map = []
+            for season in seasons:
+                # Fetch episodes with metadata
+                cur.execute("""
+                    SELECT
+                        e.episode_id,
+                        e.episode_number,
+                        e.episode_name,
+                        e.overview,
+                        e.air_date,
+                        m.rating,
+                        m.watched_date
+                    FROM series_episodes e
+                    LEFT JOIN episode_metadata m ON m.episode_id = e.episode_id
+                    WHERE e.season_id = %s
+                    ORDER BY e.episode_number
+                """, (season["season_id"],))
+                season["episodes"] = cur.fetchall()
+
+                # Fetch average rating for this season
+                cur.execute("""
+                    SELECT ROUND(AVG(m.rating)::numeric, 2) AS average_rating
+                    FROM series_episodes e
+                    JOIN episode_metadata m ON m.episode_id = e.episode_id
+                    WHERE e.season_id = %s
+                """, (season["season_id"],))
+                season["average_rating"] = cur.fetchone()["average_rating"]
+
+                season_map.append(season)
+
+            # Fetch overall series rating
+            cur.execute("""
+                SELECT ROUND(AVG(m.rating)::numeric, 2) AS series_average_rating
+                FROM series_episodes e
+                JOIN episode_metadata m ON m.episode_id = e.episode_id
+                WHERE e.series_id = %s
+            """, (title_id,))
+            series_rating = cur.fetchone()["series_average_rating"]
+
     else:
         return HTMLResponse(content="Invalid title type", status_code=400)
 
-    title = diagnostics["data"][0] if diagnostics["record_count"] else None
+    if title_type == "movie":
+        title = diagnostics["data"][0] if diagnostics["record_count"] else None
+
     cast = get_cast_for_title(title_id, title_type)
 
     return templates.TemplateResponse(
@@ -160,10 +216,87 @@ async def title_detail(request: Request, title_type: str, title_id: int):
             "request": request,
             "title": title,
             "cast": cast,
+            "season_map": season_map,
+            "series_rating": series_rating,
             "diagnostics": diagnostics,
             "now": datetime.now()
         },
     )
+
+def get_seasons_for_series(series_id: int):
+    query = """
+        SELECT
+            season_id,
+            season_number,
+            air_date,
+            poster_path,
+            season_name,
+            overview
+        FROM series_seasons
+        WHERE series_id = %s
+        ORDER BY season_number
+    """
+    db = get_connection()
+    with db.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute(query, (series_id,))
+        return cursor.fetchall()
+
+def get_episodes_for_season(season_id: int):
+    query = """
+        SELECT
+            e.episode_id,
+            e.season_id,
+            e.episode_number,
+            e.name,
+            e.overview,
+            e.air_date,
+            m.rating,
+            m.watched_date
+        FROM series_episodes e
+        LEFT JOIN episode_metadata m ON m.episode_id = e.episode_id
+        WHERE e.season_id = %s
+        ORDER BY e.episode_number
+    """
+    db = get_connection()
+    with db.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute(query, (season_id,))
+        return cursor.fetchall()
+
+def get_season_episode_map(series_id: int):
+    seasons = get_seasons_for_series(series_id)
+    for season in seasons:
+        season["episodes"] = get_episodes_for_season(season["season_id"])
+    return seasons
+
+
+def get_average_ratings(series_id: int):
+    db = get_connection()
+    with db.cursor(cursor_factory=RealDictCursor) as cur:
+        # Per season
+        cur.execute("""
+            SELECT
+            s.season_id,
+            s.season_number,
+            ROUND(AVG(m.rating)::numeric, 2) AS average_rating
+            FROM series_seasons s
+            JOIN series_episodes e ON e.season_id = s.season_id
+            JOIN episode_metadata m ON m.episode_id = e.episode_id
+            WHERE s.series_id = %s
+            GROUP BY s.season_id, s.season_number
+            ORDER BY s.season_number;
+        """, (series_id,))
+        season_ratings = cur.fetchall()
+
+        # Whole series
+        cur.execute("""
+            SELECT ROUND(AVG(m.rating)::numeric, 2) AS average_rating
+            FROM series_episodes e
+            JOIN episode_metadata m ON m.episode_id = e.episode_id
+            WHERE e.series_id = %s
+        """, (series_id,))
+        series_rating = cur.fetchone()["series_average_rating"]
+
+    return season_ratings, series_rating
 
 
 @app.get("/", response_class=HTMLResponse)

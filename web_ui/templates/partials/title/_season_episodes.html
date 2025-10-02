@@ -1,0 +1,48 @@
+{% if title.type == 'tv' and season_map %}
+<div class="mt-6 space-y-6">
+  {% for season in season_map %}
+    <div class="border border-gray-700 rounded-lg">
+      <button class="toggle-season w-full text-left px-4 py-2 bg-gray-800 hover:bg-gray-700 font-semibold">
+        📁 Season {{ season.season_number }} — {{ season.season_name or 'Untitled' }}
+        {% if season.average_rating %}
+          <span class="text-yellow-400 ml-2">⭐ {{ season.average_rating }}</span>
+        {% endif %}
+      </button>
+
+      <div class="season-episodes hidden px-4 py-2 space-y-2">
+        {% for ep in season.episodes %}
+          <div class="bg-dark-glow p-3 rounded border border-gray-600">
+            <div class="flex justify-between items-center">
+              <span>S{{ season.season_number }}E{{ ep.episode_number }} — {{ ep.name }}</span>
+              <span class="text-sm text-gray-400">{{ ep.air_date }}</span>
+            </div>
+            {% if ep.overview %}
+              <p class="text-sm text-gray-300 mt-1">{{ ep.overview }}</p>
+            {% endif %}
+            {% if ep.rating %}
+              <p class="text-sm text-yellow-400 mt-1">⭐ Rated: {{ ep.rating }}</p>
+            {% endif %}
+            {% if ep.watched_date %}
+              <p class="text-sm text-green-400">👁️ Watched: {{ ep.watched_date }}</p>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".toggle-season").forEach(button => {
+      button.addEventListener("click", () => {
+        const panel = button.nextElementSibling;
+        panel.classList.toggle("hidden");
+        button.textContent = panel.classList.contains("hidden")
+          ? button.textContent.replace("📂", "📁")
+          : button.textContent.replace("📁", "📂");
+      });
+    });
+  });
+</script>
