@@ -1,69 +1,51 @@
-<div class="card fadeInUp p-6 bg-dark-glow rounded-lg">
-  <div class="flex flex-col md:flex-row gap-6 items-start">
-
+<div class="title-card">
+  <div class="title-card-inner">
+    
     <!-- Poster -->
     {% if title.poster_path %}
-    <div class="flex-shrink-0">
-      <img src="https://image.tmdb.org/t/p/w300{{ title.poster_path }}" alt="Poster for {{ title.title or 'Untitled' }}"
-        class="rounded-lg h-auto max-h-96 w-auto" />
+    <div class="poster">
+      <img src="https://image.tmdb.org/t/p/w300{{ title.poster_path }}"
+           alt="Poster for {{ title.title or 'Untitled' }}" />
     </div>
     {% endif %}
 
     <!-- Metadata -->
-    <div class="flex-grow space-y-4">
-      <!-- Title & Year -->
-      <div class="flex items-center justify-between">
-        <h2 class="text-3xl font-bold">
-          {{ title.title }}
-          {% if title.type == 'tv' %}<span class="text-sm ml-2 badge">📺 TV Series</span>{% endif %}
-          {% if title.type == 'movie' %}<span class="text-sm ml-2 badge">🎬 Movie</span>{% endif %}
-        </h2>
-        <span class="text-sm">
-          <span class="text-sm">
-            📅
-            {% if title.type == 'tv' %}
+    <div class="metadata">
+      <div class="title-row">
+        <h2>{{ title.title }}</h2>
+        <span class="type">
+          {% if title.type == 'tv' %}📺 TV Series{% else %}🎬 Movie{% endif %}
+        </span>
+        <span class="year">
+          📅 {% if title.type == 'tv' %}
             {% if title.first_air_date and title.last_air_date %}
-            {{ title.first_air_date.year }}–{{ title.last_air_date.year }}
+              {{ title.first_air_date.year }}–{{ title.last_air_date.year }}
             {% elif title.first_air_date %}
-            {{ title.first_air_date.year }}
+              {{ title.first_air_date.year }}
             {% else %}
-            —
+              —
             {% endif %}
-            {% else %}
+          {% else %}
             {{ title.release_year or '—' }}
-            {% endif %}
-          </span>
+          {% endif %}
         </span>
       </div>
 
-      <!-- Runtime & Genres -->
-      <div class="flex flex-wrap gap-3 text-sm">
+      <div class="runtime-genres">
         <span>⏱️ {{ title.runtime if title.runtime else '—' }} min</span>
-        {% if title.genres %}
         {% for genre in title.genres %}
-        <span class="badge">{{ genre }}</span>
+          <span class="genre">{{ genre }}</span>
         {% endfor %}
-        {% else %}
-        <span class="text-gray-500 italic">No genres listed</span>
-        {% endif %}
       </div>
 
-      <!-- Ratings -->
-      <div class="flex items-center gap-4 text-sm">
-        {% if title.vote_average is defined and title.vote_average is not none %}
-        <span>⭐ {{ title.vote_average | round(1) }}</span>
-        {% else %}
-        <span class="text-gray-500 italic">Unrated</span>
+      <div class="ratings">
+        <span>⭐ {{ title.vote_average | round(1) if title.vote_average is not none else 'Unrated' }}</span>
+        <span>📝 {{ title.vote_count or '0' }} reviews</span>
+        {% if series_rating %}
+          <span class="series-rating">⭐ SHMDB Series Avg: {{ series_rating }}</span>
         {% endif %}
-
-        <span>📝 {{ title.vote_count if title.vote_count is not none else '0' }} reviews</span>
-
-        {% if title.type == 'tv' and series_rating %}
-        <span class="text-yellow-400 font-semibold">⭐ SHMDB Series Avg: {{ series_rating }}</span>
-        {% endif %}
-
         {% if personal_rating %}
-        <span class="text-green-400 font-semibold">🌟 SHMDB Rating: {{ personal_rating }}</span>
+          <span class="personal-rating">🌟 SHMDB Rating: {{ personal_rating }}</span>
         {% endif %}
       </div>
     </div>
