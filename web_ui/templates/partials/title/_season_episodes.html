@@ -1,47 +1,65 @@
 {% if title.type == 'tv' and season_map %}
-<div class="mt-6 space-y-6">
-  {% for season in season_map %}
-    <div class="border border-gray-700 rounded-lg">
-      <button class="toggle-season w-full text-left px-4 py-2 bg-gray-800 hover:bg-gray-700 font-semibold">
-        📁 Season {{ season.season_number }} — {{ season.season_name or 'Untitled' }}
-        {% if season.average_rating %}
-          <span class="text-yellow-400 ml-2">⭐ {{ season.average_rating }}</span>
-        {% endif %}
+<div class="panel">
+  <h2>Seasons & Episodes</h2>
+  <div class="nav-panel">
+    {% for season in season_map %}
+    <div class="season-panel">
+      <!-- Season Toggle -->
+      <button class="season-toggle flex justify-between items-center w-full" aria-expanded="false"
+        aria-controls="season-{{ season.season_number }}">
+        <span>
+          📁 Season {{ season.season_number }} — {{ season.season_name or 'Untitled' }}
+          {% if season.average_rating %}
+          <span class="rating ml-2">⭐ {{ season.average_rating }} </span>
+          {% endif %}
+          {% if season.date_from and season.date_to %}
+          <span class="text-xs text-gray-500 ml-2"> - 📅 {{ season.date_from }} → {{ season.date_to }}</span>
+          {% endif %}
+        </span>
+        <span class="toggle-icon">▼</span>
       </button>
-
-      <div class="season-episodes hidden px-4 py-2 space-y-2">
+      <!-- Episode List -->
+      <div id="season-{{ season.season_number }}" class="season-episodes" style="display: none;">
         {% for ep in season.episodes %}
-          <div class="bg-dark-glow p-3 rounded border border-gray-600">
-            <div class="flex justify-between items-center">
-              <span>S{{ season.season_number }}E{{ ep.episode_number }} — {{ ep.name }}</span>
-              <span class="text-sm text-gray-400">{{ ep.air_date }}</span>
-            </div>
-            {% if ep.overview %}
-              <p class="text-sm text-gray-300 mt-1">{{ ep.overview }}</p>
-            {% endif %}
+        <div class="episode-card">
+          <div class="episode-header">
+            <span>S{{ season.season_number }}E{{ ep.episode_number }} — {{ ep.episode_name }}</span>
+            <span>{{ ep.air_date_formatted }}</span>
+          </div>
+
+          {% if ep.overview %}
+          <p class="episode-overview">{{ ep.overview }}</p>
+          {% endif %}
+
+          <div class="episode-meta">
             {% if ep.rating %}
-              <p class="text-sm text-yellow-400 mt-1">⭐ Rated: {{ ep.rating }}</p>
+            <span class="rating">⭐ {{ ep.rating }}</span>
             {% endif %}
-            {% if ep.watched_date %}
-              <p class="text-sm text-green-400">👁️ Watched: {{ ep.watched_date }}</p>
+            {% if ep.watched_date_formatted %}
+            <span class="watched">👁️ {{ ep.watched_date_formatted}}</span>
             {% endif %}
           </div>
+        </div>
         {% endfor %}
       </div>
     </div>
-  {% endfor %}
+    {% endfor %}
+  </div>
 </div>
 {% endif %}
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll(".toggle-season").forEach(button => {
+    document.querySelectorAll(".season-toggle").forEach(button => {
+      const panelId = button.getAttribute("aria-controls");
+      const panel = document.getElementById(panelId);
+      const icon = button.querySelector(".toggle-icon");
+
       button.addEventListener("click", () => {
-        const panel = button.nextElementSibling;
-        panel.classList.toggle("hidden");
-        button.textContent = panel.classList.contains("hidden")
-          ? button.textContent.replace("📂", "📁")
-          : button.textContent.replace("📁", "📂");
+        const isHidden = panel.style.display === "none";
+        panel.style.display = isHidden ? "block" : "none";
+        button.setAttribute("aria-expanded", String(isHidden));
+        if (icon) icon.textContent = isHidden ? "▲" : "▼";
       });
     });
   });

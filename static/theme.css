@@ -1169,4 +1169,92 @@ pre {
   gap: 16px;
 }
 
+/* ──────────────────────────────────────────────── */
+/* 📁 SEASON + EPISODE PANELS */
+/* ──────────────────────────────────────────────── */
 
+.season-panel {
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.season-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 1rem 2rem;
+  background-color: #1A1A1A;
+  color: #EAEAEA;
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  border-bottom: 1px solid #2A2A2A;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.season-toggle:hover {
+  background-color: #2A2A2A;
+}
+
+.season-toggle .rating {
+  color: #FFB84D;
+  font-weight: 500;
+}
+
+.season-toggle .toggle-icon {
+  margin-left: 1rem;
+}
+
+.season-episodes {
+  padding: 1rem 2rem;
+  background-color: #111;
+}
+
+.episode-card {
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.episode-card:hover {
+  border-color: #00B2FF;
+}
+
+.episode-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 500;
+  color: #EAEAEA;
+}
+
+.episode-overview {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #A0A0A0;
+}
+
+.episode-meta {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #A0A0A0;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.episode-meta .rating {
+  color: #FFB84D;
+}
+
+.episode-meta .watched {
+  color: #34D399;
+}

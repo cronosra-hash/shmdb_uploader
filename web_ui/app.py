@@ -1,7 +1,7 @@
 # ─── Standard Library Imports ────────────────────────────────────────────────
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from zoneinfo import ZoneInfo
 from collections import defaultdict
 
@@ -144,10 +144,22 @@ async def db_search_results(request: Request, title: str = Form(""), year: str =
 async def title_detail(request: Request, title_type: str, title_id: int):
     db = get_connection()
 
+    season_map = []
+    series_rating = None
+    personal_rating = None
+
+
     if title_type == "movie":
         diagnostics = wrap_query("get_title_by_id", lambda: [get_title_by_id(title_id)])
-        season_map = []
-        series_rating = None
+
+        with db.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT rating
+                FROM movie_metadata
+                WHERE movie_id = %s
+            """, (title_id,))
+            result = cur.fetchone()
+            personal_rating = result["rating"] if result and result["rating"] is not None else None
 
     elif title_type == "tv":
         diagnostics = wrap_query("get_series_by_id", lambda: [get_series_by_id(title_id)])
@@ -181,6 +193,22 @@ async def title_detail(request: Request, title_type: str, title_id: int):
                     ORDER BY e.episode_number
                 """, (season["season_id"],))
                 season["episodes"] = cur.fetchall()
+
+                # Format season air date
+                season["air_date_formatted"] = format_local(season.get("air_date"), "%-d %B %Y")
+
+                # Format episode dates
+                for ep in season["episodes"]:
+                    ep["air_date_formatted"] = format_local(ep.get("air_date"), "%-d %B %Y")
+                    ep["watched_date_formatted"] = format_local(ep.get("watched_date"), "%-d %B %Y")
+
+                # Compute season date range
+                dates = [ep["air_date"] for ep in season["episodes"] if ep.get("air_date")]
+                if dates:
+                    season["date_from"] = format_local(min(dates), "%-d %B %Y")
+                    season["date_to"] = format_local(max(dates), "%-d %B %Y")
+                else:
+                    season["date_from"] = season["date_to"] = None
 
                 # Fetch average rating for this season
                 cur.execute("""
@@ -219,6 +247,7 @@ async def title_detail(request: Request, title_type: str, title_id: int):
             "season_map": season_map,
             "series_rating": series_rating,
             "diagnostics": diagnostics,
+            "personal_rating": personal_rating,
             "now": datetime.now()
         },
     )
@@ -1062,7 +1091,10 @@ def format_local(dt, fmt="%d %b %Y, %H:%M"):
             dt = datetime.fromisoformat(dt)
         except ValueError:
             return "Unknown"
-    if not isinstance(dt, datetime):
+    elif isinstance(dt, date) and not isinstance(dt, datetime):
+        dt = datetime.combine(dt, datetime.min.time())
+    elif not isinstance(dt, datetime):
         return "Unknown"
+
     return dt.astimezone(ZoneInfo("Europe/London")).strftime(fmt)
 
