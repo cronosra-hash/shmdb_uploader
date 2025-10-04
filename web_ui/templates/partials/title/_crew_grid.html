@@ -1,0 +1,27 @@
+<div class="crew-card">
+  <h4>🧑‍💼 Crew</h4>
+  <div class="crew-grid">
+    {% for member in crew %}
+    <div class="crew-item">
+      {% if member.profile_path %}
+        <img src="https://image.tmdb.org/t/p/w200{{ member.profile_path }}" alt="{{ member.name }}" />
+      {% else %}
+        <div class="no-image">No Image</div>
+      {% endif %}
+      <div class="crew-name">{{ member.name }}</div>
+      <div class="crew-job">
+        {{ member.job }}
+        {% if member.job %}
+          <span class="crew-badge">
+            {% set job = member.job | lower | trim %}
+            {% if job == 'director' %}🎬 Director{% elif job == 'writer' %}🖊 Writer
+            {% elif job == 'composer' %}🎼 Composer{% elif job == 'producer' %}🧪 Producer
+            {% elif job == 'editor' %}✂️ Editor{% endif %}
+          </span>
+        {% endif %}
+      </div>
+      <div class="crew-department">{{ member.department }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
