@@ -1258,3 +1258,122 @@ pre {
 .episode-meta .watched {
   color: #34D399;
 }
+
+
+
+
+/* ──────────────────────────────────────────────── */
+/* 🔍 SHMDB SEARCH FORMS */
+/* ──────────────────────────────────────────────── */
+
+.shmdb-search-forms {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.shmdb-search-form {
+  display: flex;
+  flex-direction: column; /* 🔄 changed from row to column */
+  gap: 0.75rem;            /* tighter vertical spacing */
+    max-width: 960px;
+  width: 100%;
+  box-sizing: border-box;      /* ✅ includes padding in width calc */
+  padding: 1rem 2rem;
+  background-color: #1A1A1A;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px #2A2A2A;
+}
+
+.shmdb-search-form input[type="text"] {
+  width: 100%;
+  max-width: 100%;             /* ✅ prevents overflow */
+  box-sizing: border-box;      /* ✅ includes padding in width calc */
+  padding: 0.5rem 0.6rem;
+  background-color: #111;
+  border: 1px solid #333;
+  color: #EEE;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  min-width: 0;                /* ✅ overrides flex-induced overflow */
+}
+
+.shmdb-search-form button {
+  align-self: flex-start;  /* aligns button to left */
+  padding: 0.5rem 1rem;
+  background-color: #00B2FF;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.shmdb-search-form button:hover {
+  background-color: #0090D0;
+}
+
+/* ──────────────────────────────────────────────── */
+/* 🔍 SHMDB SEARCH RESULTS */
+/* ──────────────────────────────────────────────── */
+
+/* Container */
+h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #EAEAEA;
+  font-weight: 600;
+}
+
+/* Results list */
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Individual result item */
+li {
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  transition: background-color 0.2s ease;
+}
+
+li:hover {
+  background-color: #222;
+}
+
+/* Result link */
+li a {
+  display: block;
+  color: #00B2FF;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+li a:hover {
+  text-decoration: underline;
+}
+
+/* Metadata (year and type) */
+li a span {
+  color: #AAA;
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
+}
+
+/* No results fallback */
+li:empty,
+li.no-results {
+  font-style: italic;
+  color: #666;
+  background: none;
+  border: none;
+  padding: 0.5rem 0;
+}

@@ -2,16 +2,9 @@
 
 {% block content %}
 <div class="page-wrapper">
-<form method="post" action="/db_search" class="space-y-4">
-  <div>
-    <label for="title">Movie/Series Name</label>
-    <input type="text" name="title" id="title" class="input" />
+  <div class="panel">
+    <h2>🔍 Search SHMDB</h2>
+    {% include "partials/title/_shmdb_search_form.html" %}
   </div>
-  <div>
-    <label for="year">Year of Release</label>
-    <input type="text" name="year" id="year" class="input" />
-  </div>
-  <button type="submit" class="btn">Search</button>
-</form>
 </div>
 {% endblock %}

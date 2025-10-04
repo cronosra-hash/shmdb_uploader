@@ -75,7 +75,11 @@ async def missing_tv(request: Request, field: str):
 
 @router.get("/db_search", response_class=HTMLResponse)
 async def db_search_form(request: Request):
-    return templates.TemplateResponse("db_search.html", {"request": request,"now": datetime.now()})
+    return templates.TemplateResponse("db_search.html", {
+        "request": request,
+        "now": datetime.now(),
+        "app_env": APP_ENV
+        })
 
 @router.post("/db_search", response_class=HTMLResponse)
 async def db_search_results(request: Request, title: str = Form(""), year: str = Form("")):
@@ -135,6 +139,7 @@ async def db_search_results(request: Request, title: str = Form(""), year: str =
 
     return templates.TemplateResponse("db_search_results.html", {
         "request": request,
+        "app_env": APP_ENV,
         "results": results,
         "query": {"title": title, "year": year},
         "now": datetime.now()
@@ -242,6 +247,7 @@ async def title_detail(request: Request, title_type: str, title_id: int):
         "title_detail.html",
         {
             "request": request,
+            "app_env": APP_ENV,
             "title": title,
             "cast": cast,
             "season_map": season_map,
