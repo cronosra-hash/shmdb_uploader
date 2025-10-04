@@ -1,15 +1,25 @@
-<div class="card fadeInUp mt-6">
-  <h4 class="mb-2">🎭 Cast</h4>
-  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+<div class="cast-card">
+  <h4>🎭 Cast</h4>
+  <div class="cast-grid">
     {% for actor in cast %}
-    <div class="bg-dark-glow p-2 rounded shadow transition">
+    <div class="cast-item">
       {% if actor.profile_path %}
-      <img src="https://image.tmdb.org/t/p/w200{{ actor.profile_path }}" alt="{{ actor.name }}" class="rounded mb-2" />
+      <img src="https://image.tmdb.org/t/p/w200{{ actor.profile_path }}" alt="{{ actor.name }}" />
       {% else %}
-      <div class="bg-gray-800 h-32 flex items-center justify-center text-gray-400">No Image</div>
+      <div class="no-image">No Image</div>
       {% endif %}
-      <div class="text-sm font-semibold">{{ actor.name }}</div>
-      <div class="text-xs italic">{{ actor.character_name }}</div>
+      <div class="actor-name">{{ actor.name }}</div>
+      <div class="character-name">
+        {{ actor.character_name }}
+        {% if actor.role_type %}
+        <span class="role-badge">
+          {% set role = actor.role_type | lower | trim %}
+          {% if role == 'lead' %}🎬 Lead{% elif role == 'supporting' %}🎭 Supporting
+          {% elif role == 'cameo' %}👀 Cameo{% elif role == 'voice' %}🎙 Voice
+          {% else %}🔧 {{ role | capitalize }}{% endif %}
+        </span>
+        {% endif %}
+      </div>
     </div>
     {% endfor %}
   </div>
