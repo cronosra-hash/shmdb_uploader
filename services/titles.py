@@ -44,6 +44,7 @@ def get_title_by_id(title_id: int):
 
     return base
 
+
 def get_series_by_id(series_id: int):
     query = """
         SELECT
@@ -85,9 +86,16 @@ def get_series_by_id(series_id: int):
     return base
 
 
-
 DATE_FIELDS = {"release_date", "first_air_date"}
-NUMERIC_FIELDS = {"budget", "revenue", "runtime", "vote_count", "number_of_seasons", "number_of_seasons"}
+NUMERIC_FIELDS = {
+    "budget",
+    "revenue",
+    "runtime",
+    "vote_count",
+    "number_of_seasons",
+    "number_of_seasons",
+}
+
 
 def get_movie_titles_missing(field: str):
     column = MOVIE_FIELD_MAP.get(field)
@@ -120,6 +128,7 @@ def get_movie_titles_missing(field: str):
         cursor.execute(query)
         return cursor.fetchall()
 
+
 MOVIE_FIELD_MAP = {
     "missing_overview": "overview",
     "missing_release_date": "release_date",
@@ -131,6 +140,7 @@ MOVIE_FIELD_MAP = {
     "missing_budget": "budget",
     "missing_revenue": "revenue",
 }
+
 
 def get_tv_titles_missing(field: str):
     column = TV_FIELD_MAP.get(field)
@@ -162,6 +172,7 @@ def get_tv_titles_missing(field: str):
         cursor.execute(query)
         return cursor.fetchall()
 
+
 TV_FIELD_MAP = {
     "missing_overview": "overview",
     "missing_first_air_date": "first_air_date",
@@ -172,5 +183,5 @@ TV_FIELD_MAP = {
     "missing_imdb": "imdb_id",
     "missing_network": "network",
     "missing_number_of_episodes": "number_of_episodes",
-    "missing_number_of_seasons": "number_of_seasons"
+    "missing_number_of_seasons": "number_of_seasons",
 }

@@ -34,7 +34,7 @@ from services.news_fetcher import get_all_news
 from services.stats import get_new_releases
 
 # from services.reviews import get_reviews_for_title
-from services.actors import get_cast_for_title
+from services.actors import get_cast_for_title, get_crew_for_title
 
 # ─── Environment Setup ───────────────────────────────────────────────────────
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -242,6 +242,7 @@ async def title_detail(request: Request, title_type: str, title_id: int):
         title = diagnostics["data"][0] if diagnostics["record_count"] else None
 
     cast = get_cast_for_title(title_id, title_type)
+    crew = get_crew_for_title(title_id, title_type)
 
     return templates.TemplateResponse(
         "title_detail.html",
@@ -250,6 +251,7 @@ async def title_detail(request: Request, title_type: str, title_id: int):
             "app_env": APP_ENV,
             "title": title,
             "cast": cast,
+            "crew": crew,
             "season_map": season_map,
             "series_rating": series_rating,
             "diagnostics": diagnostics,
