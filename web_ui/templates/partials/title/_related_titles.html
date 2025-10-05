@@ -1,4 +1,35 @@
-<div class="cast-card">
-  <h4>🎭 Related Titles</h4>
+<div class="related-card">
+  <h4>🔗 Related Titles</h4>
 
+  {% if related_titles %}
+  <div class="related-grid">
+    {% for item in related_titles %}
+    <div class="related-item">
+      {% if item.poster_path %}
+        <img src="https://image.tmdb.org/t/p/w200{{ item.poster_path }}" alt="{{ item.movie_title or item.series_name }}" />
+      {% else %}
+        <div class="no-image">No Image</div>
+      {% endif %}
+
+      <div class="related-name">
+        {{ item.movie_title or item.series_name }}
+      </div>
+
+      <div class="related-meta">
+        {% if item.release_date %}
+          📅 {{ item.release_date.year }}
+        {% elif item.first_air_date %}
+          📅 {{ item.first_air_date.year }}
+        {% else %}
+          📅 —
+        {% endif %}
+        {% if item.movie_id %}<span class="type-badge">🎬 Movie</span>{% endif %}
+        {% if item.series_id %}<span class="type-badge">📺 Series</span>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="no-related">No related titles found. Try exploring by genre or cast.</div>
+  {% endif %}
 </div>

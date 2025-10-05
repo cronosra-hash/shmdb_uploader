@@ -32,6 +32,7 @@ from web_ui.filters import datetimeformat, ago, to_timezone, timestamp_color
 from routes import news
 from services.news_fetcher import get_all_news
 from services.stats import get_new_releases
+from services.title_utils import get_related_titles
 
 # from services.reviews import get_reviews_for_title
 from services.actors import get_cast_for_title, get_crew_for_title
@@ -243,6 +244,8 @@ async def title_detail(request: Request, title_type: str, title_id: int):
 
     cast = get_cast_for_title(title_id, title_type)
     crew = get_crew_for_title(title_id, title_type)
+    related_titles = get_related_titles(title_id, title_type)
+
 
     return templates.TemplateResponse(
         "title_detail.html",
@@ -256,9 +259,11 @@ async def title_detail(request: Request, title_type: str, title_id: int):
             "series_rating": series_rating,
             "diagnostics": diagnostics,
             "personal_rating": personal_rating,
+            "related_titles": related_titles,
             "now": datetime.now()
         },
     )
+
 
 def get_seasons_for_series(series_id: int):
     query = """

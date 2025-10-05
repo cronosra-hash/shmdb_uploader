@@ -1799,3 +1799,90 @@ li a .badge {
   font-size: 0.75rem;
   line-height: 1.4;
 }
+
+/* ──────────────────────────────────────────────── */
+/* 🔍 SHMDB DETAIL RELATED TITLES */
+/* ──────────────────────────────────────────────── */
+
+.related-card {
+  margin-top: 2rem;
+  padding: 1.5rem 2rem;
+  background-color: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 8px;
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
+  color: #EEE;
+}
+
+.related-card h4 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  color: #FFD700;
+}
+
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.related-item {
+  background-color: #222;
+  border-radius: 6px;
+  padding: 0.5rem;
+  box-shadow: 0 0 0 1px #333;
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.related-item:hover {
+  transform: translateY(-2px);
+}
+
+.related-item img {
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  object-fit: cover;
+}
+
+.no-image {
+  background-color: #444;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #AAA;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.related-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #EEE;
+  margin-bottom: 0.25rem;
+}
+
+.related-meta {
+  font-size: 0.75rem;
+  color: #AAA;
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.type-badge {
+  background-color: #333;
+  color: #FFD700;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
