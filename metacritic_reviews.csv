@@ -1,0 +1,7 @@
+title,type,critic,score,publication,review_date,excerpt,review_link,error
+Oppenheimer,movie,,,,,,https://www.metacritic.com/movie/oppenheimer/critic-reviews,No reviews found
+Succession,tv,,,,,,https://www.metacritic.com/tv/succession/critic-reviews,No reviews found
+The Bear,tv,,,,,,,HTTP 404
+Everything Everywhere All At Once,movie,,,,,,,HTTP 404
+Unknown Title,movie,,,,,,,HTTP 404
+Nonexistent Show,tv,,,,,,,HTTP 404
