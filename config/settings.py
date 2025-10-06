@@ -15,6 +15,8 @@ else:
 # TMDB API Key (shared across environments)
 TMDB_API_KEY = os.getenv("TMDB_API_KEY")
 
+TV_API_KEY = os.getenv("TV-API_KEY")
+
 # Database Configuration
 DB_CONFIG = {
     "dbname": os.getenv("DB_NAME"),
