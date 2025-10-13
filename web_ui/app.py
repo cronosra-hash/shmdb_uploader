@@ -136,7 +136,7 @@ async def db_search_results(request: Request, title: str = Form(""), year: str =
         results = cursor.fetchall()
 
     if len(results) == 1:
-        return RedirectResponse(url=f"/title/{results[0]['id']}", status_code=303)
+        return RedirectResponse(url=f"/title/{results[0]['type']}/{results[0]['id']}", status_code=303)
 
     return templates.TemplateResponse("db_search_results.html", {
         "request": request,
