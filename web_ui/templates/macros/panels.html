@@ -31,7 +31,7 @@
           {% for release in current_releases %}
           <tr>
             <td><a href="{{ release.source_url }}" target="_blank">{{ release.title }}</a></td>
-            <td>{{ release.release_date or "Unknown" }}</td>
+            <td>{{ release.release_date.strftime('%d/%m/%Y') if release.release_date else "Unknown" }}</td>
             <td>{{ format_runtime(release.runtime) }}</td>
             <td>{{ release.certification or "Unrated" }}</td>
             <td>{{ release.distributor or "Unknown" }}</td>
@@ -64,7 +64,7 @@
           {% for release in next_releases %}
           <tr>
             <td><a href="{{ release.source_url }}" target="_blank">{{ release.title }}</a></td>
-            <td>{{ release.release_date or "Unknown" }}</td>
+            <td>{{ release.release_date.strftime('%d/%m/%Y') if release.release_date else "Unknown" }}</td>
             <td>{{ format_runtime(release.runtime) }}</td>
             <td>{{ release.certification or "Unrated" }}</td>
             <td>{{ release.distributor or "Unknown" }}</td>
@@ -100,7 +100,7 @@
           {% for show in shows %}
           <tr>
             <td><a href="{{ show.source_url }}" target="_blank">{{ show.title }}</a></td>
-            <td>{{ show.release_date }}</td>
+            <td>{{ show.release_date.strftime('%d/%m/%Y') if show.release_date else "Unknown" }}</td>
             <td>{{ format_runtime(show.runtime) }}</td>
             <td>{{ show.platform or "Unknown" }}</td>
             <td>{{ show.genre or "Unknown" }}</td>

@@ -1028,7 +1028,7 @@ def get_cinema_releases(month: int = None, year: int = None) -> List[Dict]:
                     distributor = details["production_companies"][0].get("name", "")
                 releases.append({
                     "title": movie["title"],
-                    "release_date": format_local(uk_date),
+                    "release_date": datetime.fromisoformat(uk_date) if uk_date else None,
                     "runtime": details.get("runtime", "Unknown"),
                     "certification": release_info.get("certification", "Unrated"),
                     "distributor": distributor or "Unknown",
