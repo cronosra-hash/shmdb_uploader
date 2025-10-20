@@ -14,7 +14,7 @@
 
 {% macro render_cinema_panel(current_releases, next_releases, now, next_month) %}
   <div class="panel cinema-panel">
-    <h2>🎟️ Cinema Releases – {{ now.strftime('%B %Y') }} <span class="region-tag">🇬🇧 UK Only</span></h2>
+    <h2>🎟️ Cinema Releases – {{ now.strftime('%B %Y') }}</h2>
     {% if current_releases %}
       <table class="release-table">
         <thead>
@@ -84,7 +84,7 @@
 
 {% macro render_tv_panel(shows, now) %}
   <div class="panel tv-panel">
-    <h2>📺 TV Releases – {{ now.strftime('%B %Y') }} <span class="region-tag">🇬🇧 UK Only</span></h2>
+    <h2>📺 TV Releases – {{ now.strftime('%B %Y') }}</h2>
     {% if shows %}
       <table class="release-table">
         <thead>

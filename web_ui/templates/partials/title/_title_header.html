@@ -1,11 +1,11 @@
 <div class="title-card">
   <div class="title-card-inner">
-    
+
     <!-- Poster -->
     {% if title.poster_path %}
     <div class="poster">
       <img src="https://image.tmdb.org/t/p/w300{{ title.poster_path }}"
-           alt="Poster for {{ title.title or 'Untitled' }}" />
+        alt="Poster for {{ title.title or 'Untitled' }}" />
     </div>
     {% endif %}
 
@@ -18,15 +18,15 @@
         </span>
         <span class="year">
           📅 {% if title.type == 'tv' %}
-            {% if title.first_air_date and title.last_air_date %}
-              {{ title.first_air_date.year }}–{{ title.last_air_date.year }}
-            {% elif title.first_air_date %}
-              {{ title.first_air_date.year }}
-            {% else %}
-              —
-            {% endif %}
+          {% if title.first_air_date and title.last_air_date %}
+          {{ title.first_air_date.year }}–{{ title.last_air_date.year }}
+          {% elif title.first_air_date %}
+          {{ title.first_air_date.year }}
           {% else %}
-            {{ title.release_year or '—' }}
+          —
+          {% endif %}
+          {% else %}
+          {{ title.release_year or '—' }}
           {% endif %}
         </span>
       </div>
@@ -34,7 +34,7 @@
       <div class="runtime-genres">
         <span>⏱️ {{ title.runtime if title.runtime else '—' }} min</span>
         {% for genre in title.genres %}
-          <span class="genre">{{ genre }}</span>
+        <span class="genre">{{ genre }}</span>
         {% endfor %}
       </div>
 
@@ -42,12 +42,75 @@
         <span>⭐ {{ title.vote_average | round(1) if title.vote_average is not none else 'Unrated' }}</span>
         <span>📝 {{ title.vote_count or '0' }} reviews</span>
         {% if series_rating %}
-          <span class="series-rating">⭐ SHMDB Series Avg: {{ series_rating }}</span>
+        <span class="series-rating">⭐ SHMDB Series Avg: {{ series_rating }}</span>
         {% endif %}
         {% if personal_rating %}
-          <span class="personal-rating">🌟 SHMDB Rating: {{ personal_rating }}</span>
+        <span class="personal-rating">🌟 SHMDB Rating: {{ personal_rating }}</span>
+        {% endif %}
+      </div>
+      <div class="dates">
+        <span>
+          {% if title.type == 'tv' and title.first_air_date %}
+          <p>📅 Aired: {{ title.first_air_date.strftime('%d/%m/%Y') }}
+            - {{ title.last_air_date.strftime('%d/%m/%Y') }}</p>
+          {% elif title.release_date %}
+          📅 Released: {{ title.release_date.strftime('%d/%m/%Y') }}
+          {% else %}
+          —
+          {% endif %}
+        </span>
+
+        {% if title.type == 'tv' %}
+        <span>👁️ Watched:
+          {% if title.first_watched_date %}
+          {{ title.first_watched_date.strftime('%d/%m/%Y') }}
+          {% else %}
+          —
+          {% endif %}
+          -
+          {% if title.last_watched_date %}
+          {{ title.last_watched_date.strftime('%d/%m/%Y') }}
+          {% else %}
+          —
+          {% endif %}
+        </span>
+        {% else %}
+        <span>👁️ Watched:
+          {% if title.watched_date %}
+          {{ title.watched_date.strftime('%d/%m/%Y') }} - {{ title.source }}
+          {% else %}
+          —
+          {% endif %}
+        </span>
+        {% endif %}
+      </div>
+      <div class="overview">
+        <p>{{ title.overview or "No overview available." }}</p>
+      </div>
+      <div class="additional_details">
+        <p><strong>Original Language:</strong> {{ title.language_name or "Unknown" }}</p>
+        {% if title.type == 'movie' %}
+        <p><strong>Budget:</strong> {{ title.budget | currency if title.budget else "Unknown" }}</p>
+        <p><strong>Revenue:</strong> {{ title.revenue | currency if title.revenue else "Unknown" }}</p>
+        {% endif %}
+
+        <p><strong>Homepage:</strong> <a href="{{ title.homepage }}" target="_blank">{{ title.homepage or "Unknown"
+            }}</a></p>
+
+        {% if title.type == 'tv' %}
+        {% if title.number_of_seasons %}
+        <p><strong>Seasons:</strong> {{ title.number_of_seasons }}</p>
+        {% endif %}
+        {% if title.number_of_episodes %}
+        <p><strong>Episodes:</strong> {{ title.number_of_episodes }}</p>
+        {% endif %}
+        {% if title.status %}
+        <p><strong>Status:</strong> {{ title.status }}</p>
+        {% endif %}
+        {% if title.networks %}
+        <p><strong>Networks:</strong> {{ title.networks | join(', ') }}</p>
+        {% endif %}
         {% endif %}
       </div>
     </div>
   </div>
-</div>

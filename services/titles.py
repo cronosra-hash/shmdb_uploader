@@ -7,15 +7,26 @@ def get_title_by_id(title_id: int):
         SELECT
             m.movie_id,
             m.movie_title,
+            m.original_title,
+            m.overview,
             mm.release_year,
+            m.release_date,
+            mm.watched_date,
             m.runtime,
             m.vote_average,
             m.vote_count,
             g.genre_name,
-            m.poster_path
+            m.poster_path,
+            m.backdrop_path,
+            sl.language_name,
+            m.budget,
+            m.revenue,
+            m.homepage,
+			mm.source
         FROM movies m
         LEFT JOIN movie_genres mg ON mg.movie_id = m.movie_id
         LEFT JOIN genres g ON g.genre_id = mg.genre_id
+		LEFT JOIN spoken_languages sl ON sl.iso_639_1 = m.original_language
         JOIN movie_metadata mm ON mm.movie_id = m.movie_id
         WHERE m.movie_id = %s
     """
@@ -50,16 +61,37 @@ def get_series_by_id(series_id: int):
         SELECT
             s.series_id,
             s.series_name,
+            s.overview,
+            s.first_air_date,
+            s.last_air_date,
+            s.number_of_seasons,
+            s.number_of_episodes,
+            s.popularity,
             s.vote_average,
             s.vote_count,
-            g.genre_name,
             s.poster_path,
-            s.first_air_date,
-            s.last_air_date
+            s.backdrop_path,
+            s.original_language,
+            s.status,
+            s.homepage,
+            s.imdb_id,
+            g.genre_name,
+            watch_range.first_watched_date,
+            watch_range.last_watched_date
         FROM series s
         LEFT JOIN series_genres sg ON sg.series_id = s.series_id
         LEFT JOIN genres g ON g.genre_id = sg.genre_id
-        WHERE s.series_id = %s
+        LEFT JOIN (
+            SELECT
+                se.series_id,
+                MIN(em.watched_date) AS first_watched_date,
+                MAX(em.watched_date) AS last_watched_date
+            FROM series_episodes se
+            JOIN episode_metadata em ON em.episode_id = se.episode_id
+            WHERE em.watched_date IS NOT NULL
+            GROUP BY se.series_id
+        ) AS watch_range ON watch_range.series_id = s.series_id
+        WHERE s.series_id = %s;
     """
     db = get_connection()
     with db.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:

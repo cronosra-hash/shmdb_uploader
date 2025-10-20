@@ -5,7 +5,6 @@ from datetime import datetime, timedelta, date
 from zoneinfo import ZoneInfo
 from collections import defaultdict
 
-
 # ─── Third-Party Imports ─────────────────────────────────────────────────────
 from psycopg2.extras import RealDictCursor
 import requests
@@ -21,12 +20,21 @@ from fastapi.templating import Jinja2Templates
 from config.settings import TMDB_API_KEY
 from db.connection import get_connection
 from uploader.movie_uploader import insert_or_update_movie_data
-from uploader.tv_uploader import insert_or_update_series_data, sync_series_episodes, sync_series_seasons
+from uploader.tv_uploader import (
+    insert_or_update_series_data,
+    sync_series_episodes,
+    sync_series_seasons,
+)
 from tmdb.movie_api import get_movie_data
 from tmdb.tv_api import fetch_series, fetch_all_episodes
 from services import stats
 from services.freshness import get_freshness_summary  # or wherever you define it
-from services.titles import get_title_by_id, get_series_by_id, get_movie_titles_missing, get_tv_titles_missing
+from services.titles import (
+    get_title_by_id,
+    get_series_by_id,
+    get_movie_titles_missing,
+    get_tv_titles_missing,
+)
 from services.diagnostics import wrap_query
 from web_ui.filters import datetimeformat, ago, to_timezone, timestamp_color
 from routes import news
@@ -45,45 +53,59 @@ APP_ENV = os.getenv("APP_ENV", "unknown")
 # ─── FastAPI App Initialization ──────────────────────────────────────────────
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+def currency(value, symbol="$"):
+    try:
+        value = float(value)
+        return f"{symbol}{value:,.0f}"
+    except (ValueError, TypeError):
+        return value
+
+
 templates = Jinja2Templates(directory="web_ui/templates")
 templates.env.filters["datetimeformat"] = datetimeformat
 templates.env.filters["ago"] = ago
 templates.env.filters["to_timezone"] = to_timezone
 templates.env.filters["timestamp_color"] = timestamp_color
+templates.env.filters["currency"] = currency
 
 # ─── Router Setup ────────────────────────────────────────────────────────────
 router = APIRouter()
 
 app.include_router(news.router)
 
+
 @app.get("/missing/{field}", name="missing_movies")
 async def missing_movies(request: Request, field: str):
     movies = get_movie_titles_missing(field)
-    return templates.TemplateResponse("partials/missing_movies.html", {
-        "request": request,
-        "field": field,
-        "movies": movies
-    })
+    return templates.TemplateResponse(
+        "partials/missing_movies.html",
+        {"request": request, "field": field, "movies": movies},
+    )
+
 
 @app.get("/missing_tv/{field}", name="missing_tv")
 async def missing_tv(request: Request, field: str):
     titles = get_tv_titles_missing(field)
-    return templates.TemplateResponse("partials/missing_tv.html", {
-        "request": request,
-        "field": field,
-        "titles": titles
-    })
+    return templates.TemplateResponse(
+        "partials/missing_tv.html",
+        {"request": request, "field": field, "titles": titles},
+    )
+
 
 @router.get("/db_search", response_class=HTMLResponse)
 async def db_search_form(request: Request):
-    return templates.TemplateResponse("db_search.html", {
-        "request": request,
-        "now": datetime.now(),
-        "app_env": APP_ENV
-        })
+    return templates.TemplateResponse(
+        "db_search.html",
+        {"request": request, "now": datetime.now(), "app_env": APP_ENV},
+    )
+
 
 @router.post("/db_search", response_class=HTMLResponse)
-async def db_search_results(request: Request, title: str = Form(""), year: str = Form("")):
+async def db_search_results(
+    request: Request, title: str = Form(""), year: str = Form("")
+):
     title = title.strip()
     year = year.strip()
 
@@ -106,13 +128,16 @@ async def db_search_results(request: Request, title: str = Form(""), year: str =
             series_conditions.append("DATE_PART('year', s.first_air_date) = %s")
             params.extend([year_int, year_int])
         except ValueError:
-            return templates.TemplateResponse("db_search_results.html", {
-                "request": request,
-                "results": [],
-                "query": {"title": title, "year": year},
-                "error": "Year must be a valid number",
-                "now": datetime.now()
-            })
+            return templates.TemplateResponse(
+                "db_search_results.html",
+                {
+                    "request": request,
+                    "results": [],
+                    "query": {"title": title, "year": year},
+                    "error": "Year must be a valid number",
+                    "now": datetime.now(),
+                },
+            )
 
     movie_where = " AND ".join(movie_conditions) if movie_conditions else "TRUE"
     series_where = " AND ".join(series_conditions) if series_conditions else "TRUE"
@@ -136,15 +161,21 @@ async def db_search_results(request: Request, title: str = Form(""), year: str =
         results = cursor.fetchall()
 
     if len(results) == 1:
-        return RedirectResponse(url=f"/title/{results[0]['type']}/{results[0]['id']}", status_code=303)
+        return RedirectResponse(
+            url=f"/title/{results[0]['type']}/{results[0]['id']}", status_code=303
+        )
 
-    return templates.TemplateResponse("db_search_results.html", {
-        "request": request,
-        "app_env": APP_ENV,
-        "results": results,
-        "query": {"title": title, "year": year},
-        "now": datetime.now()
-    })
+    return templates.TemplateResponse(
+        "db_search_results.html",
+        {
+            "request": request,
+            "app_env": APP_ENV,
+            "results": results,
+            "query": {"title": title, "year": year},
+            "now": datetime.now(),
+        },
+    )
+
 
 @router.get("/title/{title_type}/{title_id}", response_class=HTMLResponse)
 async def title_detail(request: Request, title_type: str, title_id: int):
@@ -154,37 +185,47 @@ async def title_detail(request: Request, title_type: str, title_id: int):
     series_rating = None
     personal_rating = None
 
-
     if title_type == "movie":
         diagnostics = wrap_query("get_title_by_id", lambda: [get_title_by_id(title_id)])
 
         with db.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT rating
                 FROM movie_metadata
                 WHERE movie_id = %s
-            """, (title_id,))
+            """,
+                (title_id,),
+            )
             result = cur.fetchone()
-            personal_rating = result["rating"] if result and result["rating"] is not None else None
+            personal_rating = (
+                result["rating"] if result and result["rating"] is not None else None
+            )
 
     elif title_type == "tv":
-        diagnostics = wrap_query("get_series_by_id", lambda: [get_series_by_id(title_id)])
+        diagnostics = wrap_query(
+            "get_series_by_id", lambda: [get_series_by_id(title_id)]
+        )
         title = diagnostics["data"][0] if diagnostics["record_count"] else None
 
         with db.cursor(cursor_factory=RealDictCursor) as cur:
             # Fetch seasons
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT season_id, season_number, air_date, poster_path, season_name, overview
                 FROM series_seasons
                 WHERE series_id = %s
                 ORDER BY season_number
-            """, (title_id,))
+            """,
+                (title_id,),
+            )
             seasons = cur.fetchall()
 
             season_map = []
             for season in seasons:
                 # Fetch episodes with metadata
-                cur.execute("""
+                cur.execute(
+                    """
                     SELECT
                         e.episode_id,
                         e.episode_number,
@@ -197,19 +238,29 @@ async def title_detail(request: Request, title_type: str, title_id: int):
                     LEFT JOIN episode_metadata m ON m.episode_id = e.episode_id
                     WHERE e.season_id = %s
                     ORDER BY e.episode_number
-                """, (season["season_id"],))
+                """,
+                    (season["season_id"],),
+                )
                 season["episodes"] = cur.fetchall()
 
                 # Format season air date
-                season["air_date_formatted"] = format_local(season.get("air_date"), "%-d %B %Y")
+                season["air_date_formatted"] = format_local(
+                    season.get("air_date"), "%-d %B %Y"
+                )
 
                 # Format episode dates
                 for ep in season["episodes"]:
-                    ep["air_date_formatted"] = format_local(ep.get("air_date"), "%-d %B %Y")
-                    ep["watched_date_formatted"] = format_local(ep.get("watched_date"), "%-d %B %Y")
+                    ep["air_date_formatted"] = format_local(
+                        ep.get("air_date"), "%-d %B %Y"
+                    )
+                    ep["watched_date_formatted"] = format_local(
+                        ep.get("watched_date"), "%-d %B %Y"
+                    )
 
                 # Compute season date range
-                dates = [ep["air_date"] for ep in season["episodes"] if ep.get("air_date")]
+                dates = [
+                    ep["air_date"] for ep in season["episodes"] if ep.get("air_date")
+                ]
                 if dates:
                     season["date_from"] = format_local(min(dates), "%-d %B %Y")
                     season["date_to"] = format_local(max(dates), "%-d %B %Y")
@@ -217,23 +268,29 @@ async def title_detail(request: Request, title_type: str, title_id: int):
                     season["date_from"] = season["date_to"] = None
 
                 # Fetch average rating for this season
-                cur.execute("""
+                cur.execute(
+                    """
                     SELECT ROUND(AVG(m.rating)::numeric, 2) AS average_rating
                     FROM series_episodes e
                     JOIN episode_metadata m ON m.episode_id = e.episode_id
                     WHERE e.season_id = %s
-                """, (season["season_id"],))
+                """,
+                    (season["season_id"],),
+                )
                 season["average_rating"] = cur.fetchone()["average_rating"]
 
                 season_map.append(season)
 
             # Fetch overall series rating
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT ROUND(AVG(m.rating)::numeric, 2) AS series_average_rating
                 FROM series_episodes e
                 JOIN episode_metadata m ON m.episode_id = e.episode_id
                 WHERE e.series_id = %s
-            """, (title_id,))
+            """,
+                (title_id,),
+            )
             series_rating = cur.fetchone()["series_average_rating"]
 
     else:
@@ -245,7 +302,6 @@ async def title_detail(request: Request, title_type: str, title_id: int):
     cast = get_cast_for_title(title_id, title_type)
     crew = get_crew_for_title(title_id, title_type)
     related_titles = get_related_titles(title_id, title_type)
-
 
     return templates.TemplateResponse(
         "title_detail.html",
@@ -260,7 +316,7 @@ async def title_detail(request: Request, title_type: str, title_id: int):
             "diagnostics": diagnostics,
             "personal_rating": personal_rating,
             "related_titles": related_titles,
-            "now": datetime.now()
+            "now": datetime.now(),
         },
     )
 
@@ -283,6 +339,7 @@ def get_seasons_for_series(series_id: int):
         cursor.execute(query, (series_id,))
         return cursor.fetchall()
 
+
 def get_episodes_for_season(season_id: int):
     query = """
         SELECT
@@ -304,6 +361,7 @@ def get_episodes_for_season(season_id: int):
         cursor.execute(query, (season_id,))
         return cursor.fetchall()
 
+
 def get_season_episode_map(series_id: int):
     seasons = get_seasons_for_series(series_id)
     for season in seasons:
@@ -315,7 +373,8 @@ def get_average_ratings(series_id: int):
     db = get_connection()
     with db.cursor(cursor_factory=RealDictCursor) as cur:
         # Per season
-        cur.execute("""
+        cur.execute(
+            """
             SELECT
             s.season_id,
             s.season_number,
@@ -326,16 +385,21 @@ def get_average_ratings(series_id: int):
             WHERE s.series_id = %s
             GROUP BY s.season_id, s.season_number
             ORDER BY s.season_number;
-        """, (series_id,))
+        """,
+            (series_id,),
+        )
         season_ratings = cur.fetchall()
 
         # Whole series
-        cur.execute("""
+        cur.execute(
+            """
             SELECT ROUND(AVG(m.rating)::numeric, 2) AS average_rating
             FROM series_episodes e
             JOIN episode_metadata m ON m.episode_id = e.episode_id
             WHERE e.series_id = %s
-        """, (series_id,))
+        """,
+            (series_id,),
+        )
         series_rating = cur.fetchone()["series_average_rating"]
 
     return season_ratings, series_rating
@@ -347,9 +411,12 @@ async def index(request: Request):
     next_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1)
 
     current_releases = get_cinema_releases(month=now.month, year=now.year)
-    next_month_releases = get_cinema_releases(month=next_month.month, year=next_month.year)
+    next_month_releases = get_cinema_releases(
+        month=next_month.month, year=next_month.year
+    )
+    tv_releases = get_tv_releases(month=now.month, year=now.year)
 
-    return templates.TemplateResponse("index.html", {
+    context = {
         **get_stats_context(request),
         "app_env": APP_ENV,
         "app_version": "0.1.0",
@@ -357,24 +424,28 @@ async def index(request: Request):
         "next_month": next_month,
         "cinema_releases": current_releases,
         "next_month_releases": next_month_releases,
-        "tv_releases": get_tv_releases(month=now.month, year=now.year),
-    })
+        "tv_releases": tv_releases,
+    }
+
+    return templates.TemplateResponse("index.html", context)
+
 
 @router.get("/statistics", response_class=HTMLResponse, name="statistics")
 async def statistics(request: Request):
     return templates.TemplateResponse("statistics.html", get_stats_context(request))
 
+
 @router.get("/uploader", response_class=HTMLResponse, name="uploader")
 async def uploader(request: Request):
     return templates.TemplateResponse("uploader.html", get_stats_context(request))
 
+
 @app.get("/news")
 def news_page(request: Request):
     articles = get_all_news(api_key="pub_000738d4a1274d798638038b9633580c")
-    return templates.TemplateResponse("news.html", {
-        "request": request,
-        "articles": articles
-    })
+    return templates.TemplateResponse(
+        "news.html", {"request": request, "articles": articles}
+    )
 
 
 def get_stats_context(request: Request):
@@ -435,7 +506,12 @@ async def search_person(request: Request):
     name = form.get("person_name")
     people = search_person_tmdb(name)
     return templates.TemplateResponse(
-        "person_results.html", {"request": request, "people": people, "now": datetime.now(),}
+        "person_results.html",
+        {
+            "request": request,
+            "people": people,
+            "now": datetime.now(),
+        },
     )
 
 
@@ -591,7 +667,6 @@ async def read_root(request: Request):
     )
 
 
-
 @app.post("/tmdb_search", response_class=HTMLResponse)
 async def tmdb_search(request: Request):
     form = await request.form()
@@ -608,7 +683,8 @@ async def tmdb_search(request: Request):
     annotated_results = annotate_results_with_db_status(results)
 
     return templates.TemplateResponse(
-        "tmdb_search_results.html", {"request": request, "results": annotated_results, "now": datetime.now()}
+        "tmdb_search_results.html",
+        {"request": request, "results": annotated_results, "now": datetime.now()},
     )
 
 
@@ -715,7 +791,7 @@ async def upload(request: Request, tmdb_id: int, media_type: str):
             "upload_status": "Upload complete",  # optional
             "raw_changes": changes,
             "now": datetime.now(),
-        }
+        },
     )
 
 
@@ -738,7 +814,9 @@ def process_media_upload(conn, tmdb_id, media_type):
         movie_data = get_movie_data(tmdb_id)
         insert_or_update_movie_data(conn, movie_data, media_type)
         print(f"🎬 Movie '{movie_data.get('title')}' synced (id={movie_data['id']})")
-        return movie_data["id"], f"✅ Movie '{movie_data.get('title')}' processed successfully."
+        return movie_data[
+            "id"
+        ], f"✅ Movie '{movie_data.get('title')}' processed successfully."
 
     elif media_type == "tv":
         series_data = fetch_series(tmdb_id)
@@ -844,7 +922,9 @@ def search_tmdb_combined(name):
                     if media_type == "movie"
                     else f"https://api.themoviedb.org/3/tv/{result['id']}/external_ids"
                 )
-                detail_response = requests.get(detail_url, params={"api_key": TMDB_API_KEY})
+                detail_response = requests.get(
+                    detail_url, params={"api_key": TMDB_API_KEY}
+                )
                 if detail_response.status_code == 200:
                     detail_data = detail_response.json()
                     result["imdb_id"] = detail_data.get("imdb_id")
@@ -853,6 +933,7 @@ def search_tmdb_combined(name):
 
     combined_results.sort(key=lambda x: x.get("popularity", 0), reverse=True)
     return combined_results
+
 
 def search_person_tmdb(name):
     url = "https://api.themoviedb.org/3/search/person"
@@ -934,11 +1015,13 @@ def search_person_tmdb(name):
 
     return people
 
+
 TMDB_BASE = "https://api.themoviedb.org/3"
 
 # Cache genre maps
 _movie_genres = None
 _tv_genres = None
+
 
 def get_movie_details(movie_id: int) -> Dict:
     url = f"{TMDB_BASE}/movie/{movie_id}"
@@ -949,6 +1032,7 @@ def get_movie_details(movie_id: int) -> Dict:
     except Exception as e:
         print(f"Error fetching details for movie {movie_id}: {e}")
         return {}
+
 
 def get_genre_map(content_type: str) -> Dict[int, str]:
     global _movie_genres, _tv_genres
@@ -970,35 +1054,34 @@ def get_genre_map(content_type: str) -> Dict[int, str]:
 
     return genre_map
 
-def get_uk_release_info(movie_id: int) -> Dict:
-    url = f"{TMDB_BASE}/movie/{movie_id}/release_dates"
+
+def get_english_language_info(movie_id: int) -> Dict:
+    url = f"{TMDB_BASE}/movie/{movie_id}"
     params = {"api_key": TMDB_API_KEY}
     try:
         response = requests.get(url, params=params, timeout=5)
         data = response.json()
-        for entry in data.get("results", []):
-            if entry.get("iso_3166_1") == "GB":
-                for release in entry.get("release_dates", []):
-                    if release.get("type") in [2, 3]:  # Theatrical
-                        return {
-                            "date": release.get("release_date", "")[:10],
-                            "certification": release.get("certification", "")
-                        }
+        if data.get("original_language") == "en":
+            return {
+                "title": data.get("title", ""),
+                "release_date": data.get("release_date", ""),
+                "overview": data.get("overview", ""),
+                "language": data.get("original_language", ""),
+            }
     except Exception as e:
-        print(f"Error fetching UK release info for movie {movie_id}: {e}")
-    return {"date": "", "certification": ""}
+        print(f"Error fetching movie info for {movie_id}: {e}")
+    return {}
+
 
 def get_month_range(month: int = None, year: int = None) -> List[str]:
     if month and year:
         return [f"{year}-{month:02d}"]
+
     now = datetime.now()
-    current_releases = get_cinema_releases(month=now.month, year=now.year)
-    next_month = (now.replace(day=1) + timedelta(days=32))
-    next_month_releases = get_cinema_releases(month=next_month.month, year=next_month.year)
-    return [
-        current_releases.strftime("%Y-%m"),
-        next_month.strftime("%Y-%m")
-    ]
+    next_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1)
+
+    return [now.strftime("%Y-%m"), next_month.strftime("%Y-%m")]
+
 
 def get_cinema_releases(month: int = None, year: int = None) -> List[Dict]:
     genre_map = get_genre_map("movie")
@@ -1009,36 +1092,49 @@ def get_cinema_releases(month: int = None, year: int = None) -> List[Dict]:
         url = f"{TMDB_BASE}/discover/movie"
         params = {
             "api_key": TMDB_API_KEY,
-            "language": "en-GB",
             "sort_by": "popularity.desc",
             "release_date.gte": f"{y}-{m:02d}-01",
-            "release_date.lte": f"{y}-{m:02d}-31"
+            "release_date.lte": f"{y}-{m:02d}-31",
+            "with_original_language": "en",
         }
 
         response = requests.get(url, params=params)
         movies = response.json().get("results", [])
 
         for movie in movies:
-            release_info = get_uk_release_info(movie["id"])
-            uk_date = release_info["date"]
-            if isinstance(uk_date, str) and uk_date.startswith(f"{y}-{m:02d}"):
+            release_date = movie.get("release_date", "")
+            if isinstance(release_date, str) and release_date.startswith(
+                f"{y}-{m:02d}"
+            ):
                 details = get_movie_details(movie["id"])
                 distributor = ""
                 if details.get("production_companies"):
                     distributor = details["production_companies"][0].get("name", "")
-                releases.append({
-                    "title": movie["title"],
-                    "release_date": datetime.fromisoformat(uk_date) if uk_date else None,
-                    "runtime": details.get("runtime", "Unknown"),
-                    "certification": release_info.get("certification", "Unrated"),
-                    "distributor": distributor or "Unknown",
-                    "genre": " / ".join([genre_map.get(gid, "Unknown") for gid in movie.get("genre_ids", [])]),
-                    "poster_path": movie.get("poster_path"),
-                    "source": "TMDb",
-                    "source_url": f"https://www.themoviedb.org/movie/{movie['id']}"
-                })
+                releases.append(
+                    {
+                        "title": movie["title"],
+                        "release_date": datetime.fromisoformat(release_date)
+                        if release_date
+                        else None,
+                        "runtime": details.get("runtime", "Unknown"),
+                        "certification": details.get(
+                            "certification", "Unrated"
+                        ),  # optional: may need fallback
+                        "distributor": distributor or "Unknown",
+                        "genre": " / ".join(
+                            [
+                                genre_map.get(gid, "Unknown")
+                                for gid in movie.get("genre_ids", [])
+                            ]
+                        ),
+                        "poster_path": movie.get("poster_path"),
+                        "source": "TMDb",
+                        "source_url": f"https://www.themoviedb.org/movie/{movie['id']}",
+                    }
+                )
 
     return releases
+
 
 def get_tv_platform(tv_id: int) -> str:
     url = f"{TMDB_BASE}/tv/{tv_id}"
@@ -1051,6 +1147,7 @@ def get_tv_platform(tv_id: int) -> str:
     except Exception:
         return "Unknown"
 
+
 def get_tv_releases(month: int = None, year: int = None) -> List[Dict]:
     genre_map = get_genre_map("tv")
     releases = []
@@ -1060,43 +1157,70 @@ def get_tv_releases(month: int = None, year: int = None) -> List[Dict]:
         url = f"{TMDB_BASE}/discover/tv"
         params = {
             "api_key": TMDB_API_KEY,
-            "language": "en-GB",
             "sort_by": "first_air_date.asc",
             "first_air_date.gte": f"{y}-{m:02d}-01",
-            "first_air_date.lte": f"{y}-{m:02d}-31"
+            "first_air_date.lte": f"{y}-{m:02d}-31",
+            "with_original_language": "en",
         }
 
-        response = requests.get(url, params=params)
-        shows = response.json().get("results", [])
+        try:
+            response = requests.get(url, params=params, timeout=5)
+            response.raise_for_status()
+            shows = response.json().get("results", [])
+        except Exception as e:
+            print(f"Error fetching TV releases for {y}-{m:02d}: {e}")
+            continue
 
         for s in shows:
-            if "GB" not in s.get("origin_country", []):
+            air_date_str = s.get("first_air_date", "")
+            try:
+                air_date = (
+                    datetime.fromisoformat(air_date_str) if air_date_str else None
+                )
+            except ValueError:
+                air_date = None
+
+            if not air_date or air_date.strftime("%Y-%m") != f"{y}-{m:02d}":
                 continue
 
-            # Fetch broadcaster info from TV details
+            # Fetch broadcaster info
             detail_url = f"{TMDB_BASE}/tv/{s['id']}"
-            detail_params = {
-                "api_key": TMDB_API_KEY,
-                "language": "en-GB"
-            }
-            detail_response = requests.get(detail_url, params=detail_params)
-            detail_data = detail_response.json()
+            detail_params = {"api_key": TMDB_API_KEY}
+            try:
+                detail_response = requests.get(
+                    detail_url, params=detail_params, timeout=5
+                )
+                detail_response.raise_for_status()
+                detail_data = detail_response.json()
+            except Exception as e:
+                print(f"Error fetching TV details for {s['id']}: {e}")
+                continue
 
             broadcasters = detail_data.get("networks", [])
             broadcaster_names = [b.get("name") for b in broadcasters if b.get("name")]
-            broadcaster = ", ".join(broadcaster_names) if broadcaster_names else "Unknown"
+            broadcaster = (
+                ", ".join(broadcaster_names) if broadcaster_names else "Unknown"
+            )
 
-            releases.append({
-                "title": s["name"],
-                "release_date": format_local(s.get("first_air_date")),
-                "platform": broadcaster,
-                "genre": " / ".join([genre_map.get(gid, "Unknown") for gid in s.get("genre_ids", [])]),
-                "poster_path": s.get("poster_path"),
-                "source": "TMDb",
-                "source_url": f"https://www.themoviedb.org/tv/{s['id']}"
-            })
+            releases.append(
+                {
+                    "title": s.get("name", "Untitled"),
+                    "release_date": air_date,
+                    "platform": broadcaster,
+                    "genre": " / ".join(
+                        [
+                            genre_map.get(gid, "Unknown")
+                            for gid in s.get("genre_ids", [])
+                        ]
+                    ),
+                    "poster_path": s.get("poster_path"),
+                    "source": "TMDb",
+                    "source_url": f"https://www.themoviedb.org/tv/{s['id']}",
+                }
+            )
 
     return releases
+
 
 def format_local(dt, fmt="%d %b %Y, %H:%M"):
     if isinstance(dt, str):
@@ -1111,3 +1235,10 @@ def format_local(dt, fmt="%d %b %Y, %H:%M"):
 
     return dt.astimezone(ZoneInfo("Europe/London")).strftime(fmt)
 
+
+def currency(value, symbol="$"):
+    try:
+        value = float(value)
+        return f"{symbol}{value:,.0f}"
+    except (ValueError, TypeError):
+        return value

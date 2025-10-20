@@ -1489,6 +1489,45 @@ li a .badge {
   font-weight: 600;
 }
 
+.personal-rating {
+  color: #4DFFB8;
+  font-weight: 600;
+}
+
+.dates {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: #CCC;
+}
+
+.overview {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #DDD;
+}
+
+.additional_details {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #BBB;
+}
+
+.additional_details p {
+  margin: 0.25rem 0;
+}
+
+.additional_details a {
+  color: #4D9EFF;
+  text-decoration: underline;
+}
+
+.additional_details strong {
+  color: #EEE;
+}
+
+
 /* ──────────────────────────────────────────────── */
 /* 🔍 SHMDB DETAIL CAST */
 /* ──────────────────────────────────────────────── */
