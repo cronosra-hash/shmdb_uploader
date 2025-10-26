@@ -217,6 +217,7 @@ def extract_movie_fields(data):
     return {
         "movie_id": data.get("id"),
         "movie_title": data.get("title"),
+        "original_title": data.get("original_title"),
         "overview": data.get("overview"),
         "popularity": data.get("popularity"),
         "vote_average": data.get("vote_average"),
@@ -229,6 +230,10 @@ def extract_movie_fields(data):
         "status": data.get("status"),
         "budget": data.get("budget"),
         "revenue": data.get("revenue"),
+        "imdb_id": data.get("imdb_id"),
+        "tagline": data.get("tagline"),
+        "homepage": data.get("homepage"),
+        "adult": data.get("adult"),
     }
 
 

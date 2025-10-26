@@ -34,6 +34,10 @@ SELECT
   COUNT(*) FILTER (
     WHERE
       revenue IS NULL
-  ) AS missing_revenue
+  ) AS missing_revenue,
+  COUNT(*) FILTER (
+    WHERE
+      tagline IS NULL OR tagline LIKE 'Tagline%' or tagline = ''
+  ) AS missing_tagline
 FROM
   movies;

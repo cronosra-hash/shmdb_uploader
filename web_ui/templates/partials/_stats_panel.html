@@ -58,6 +58,8 @@
       Missing Budget: {{ movies_missing_fields.missing_budget }}</a>
     <a href="{{ url_for('missing_movies', field='missing_revenue') }}" class="badge">
       Missing Revenue: {{ movies_missing_fields.missing_revenue }}</a>
+    <a href="{{ url_for('missing_movies', field='missing_tagline') }}" class="badge">
+      Missing Tagline: {{ movies_missing_fields.missing_tagline }}</a>
 
     <h4>Series Missing Key Fields</h4>
     <a href="{{ url_for('missing_tv', field='missing_overview') }}" class="badge">

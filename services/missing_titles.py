@@ -17,7 +17,8 @@ def get_titles_missing(field: str):
             m.imdb_id,
             m.budget,
             m.revenue,
-            mm.release_year
+            mm.release_year,
+            m.tagline
         FROM movies m
         LEFT JOIN movie_metadata mm ON mm.movie_id = m.movie_id
         WHERE m.{column} IS NULL OR m.{column} = ''
@@ -36,5 +37,6 @@ FIELD_MAP = {
     "missing_status": "status",
     "missing_imdb": "imdb_id",
     "missing_budget": "budget",
-    "missing_revenue": "revenue"
+    "missing_revenue": "revenue",
+    "missing_tagline": "tagline"
 }

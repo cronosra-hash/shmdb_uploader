@@ -1444,6 +1444,15 @@ li a .badge {
   font-weight: bold;
 }
 
+.tagline-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-style: italic;
+  font-size: 1rem;
+}
+
 .type {
   background-color: #333;
   color: #FFD700;

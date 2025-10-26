@@ -89,7 +89,8 @@ def get_movies_missing_fields():
         "missing_status": result[0]["missing_status"],
         "missing_imdb": result[0]["missing_imdb"],
         "missing_budget": result[0]["missing_budget"],
-        "missing_revenue": result[0]["missing_revenue"]
+        "missing_revenue": result[0]["missing_revenue"],
+        "missing_tagline": result[0]["missing_tagline"]
     } if result else None
 
 def get_series_missing_fields():

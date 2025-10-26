@@ -30,7 +30,9 @@
           {% endif %}
         </span>
       </div>
-
+      <div class="tagline-row">
+        <span>{{ title.tagline }}</span>
+      </div>
       <div class="runtime-genres">
         <span>⏱️ {{ title.runtime if title.runtime else '—' }} min</span>
         {% for genre in title.genres %}

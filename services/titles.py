@@ -22,7 +22,10 @@ def get_title_by_id(title_id: int):
             m.budget,
             m.revenue,
             m.homepage,
-			mm.source
+			mm.source,
+            m.status,
+            m.imdb_id,
+            m.tagline
         FROM movies m
         LEFT JOIN movie_genres mg ON mg.movie_id = m.movie_id
         LEFT JOIN genres g ON g.genre_id = mg.genre_id
@@ -151,7 +154,8 @@ def get_movie_titles_missing(field: str):
             status,
             imdb_id,
             budget,
-            revenue
+            revenue,
+            tagline
         FROM movies
         WHERE {condition}
     """
@@ -171,6 +175,7 @@ MOVIE_FIELD_MAP = {
     "missing_imdb": "imdb_id",
     "missing_budget": "budget",
     "missing_revenue": "revenue",
+    "missing_tagline": "tagline"
 }
 
 

@@ -12,7 +12,7 @@
   {% endif %}
 {% endmacro %}
 
-{% macro render_cinema_panel(current_releases, next_releases, now, next_month) %}
+{% macro render_cinema_panel(current_releases, next_month_releases, now, next_month) %}
   <div class="panel cinema-panel">
     <h2>🎟️ Cinema Releases – {{ now.strftime('%B %Y') }}</h2>
     {% if current_releases %}
@@ -48,7 +48,7 @@
     {% endif %}
 
     <h3 class="next-month-header">📅 Coming Soon – {{ next_month.strftime('%B %Y') }}</h3>
-    {% if next_releases %}
+    {% if next_month_releases %}
       <table class="release-table">
         <thead>
           <tr>
@@ -61,7 +61,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for release in next_releases %}
+          {% for release in next_month_releases %}
           <tr>
             <td><a href="{{ release.source_url }}" target="_blank">{{ release.title }}</a></td>
             <td>{{ release.release_date.strftime('%d/%m/%Y') if release.release_date else "Unknown" }}</td>
@@ -110,7 +110,7 @@
       </table>
     {% else %}
       <div class="news-empty">
-        🚫 No UK TV releases found for this month.<br>
+        🚫 No TV releases found for this month.<br>
         <button onclick="location.reload()">🔄 Retry</button>
       </div>
     {% endif %}

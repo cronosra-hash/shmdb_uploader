@@ -422,7 +422,7 @@ async def index(request: Request):
         "app_version": "0.1.0",
         "now": now,
         "next_month": next_month,
-        "cinema_releases": current_releases,
+        "current_releases": current_releases,
         "next_month_releases": next_month_releases,
         "tv_releases": tv_releases,
     }
