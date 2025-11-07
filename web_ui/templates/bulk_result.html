@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Upload Results{% endblock %}
+
+{% block subheader %}
+  <h2 class="upload-message">{{ upload_status }}</h2>
+{% endblock %}
+
+{% block content %}
+<div class="panel nav-panel">
+  <a href="{{ url_for('read_root') }}" class="back-button">← Back to Index</a>
+  <a href="{{ url_for('uploader') }}" class="back-button">← Back to Upload</a>
+</div>
+
+{% for result in results %}
+  <div class="panel change-panel">
+    <h3>{{ result.title if result.title else "Unknown Title" }} <small>(TMDb ID: {{ result.tmdb_id }})</small></h3>
+    <p>{{ result.message }}</p>
+
+    {% if result.changes %}
+      <table>
+        <thead>
+          <tr>
+            <th>Logged At</th>
+            <th>Update Type</th>
+            <th>Field</th>
+            <th>Previous</th>
+            <th>Current</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for change in result.changes %}
+          <tr style="--row-index: {{ loop.index0 }}">
+            <td>{{ change["timestamp"] | datetimeformat }}</td>
+            <td>{{ change["update_type"] }}</td>
+            <td>{{ change["field_name"] }}</td>
+            <td>{{ change["previous_value"] }}</td>
+            <td>{{ change["current_value"] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <details>
+        <summary>View raw change log (JSON)</summary>
+        <pre>{{ result.changes | tojson(indent=2) }}</pre>
+      </details>
+    {% else %}
+      <p class="empty-state">No changes found.</p>
+      <details>
+        <summary>Raw JSON</summary>
+        <pre>{{ result.changes | tojson(indent=2) }}</pre>
+      </details>
+    {% endif %}
+  </div>
+{% endfor %}
+{% endblock %}

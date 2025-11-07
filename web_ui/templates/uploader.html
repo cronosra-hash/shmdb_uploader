@@ -9,6 +9,15 @@
     {% include "partials/_tmdb_search_form.html" %}
   </div>
 
+  <!-- 🎬 Bulk ID Upload/Update Panel -->
+  <div class="bulk-panel">
+    <h2>🎬 Bulk ID Upload/Update</h2>
+    <p>Submit up to 100 TMDb IDs for movies or series. Choose whether to upload new entries or update existing ones.</p>
+    <div class="button-group">
+      <a href="{{ url_for('bulk_upload') }}" class="btn">Manage Movie IDs</a>
+    </div>
+  </div>
+
   <!-- 📊 Stats Panel -->
   <div class="panel">
     <h2>📊 Upload Stats</h2>

@@ -618,3 +618,24 @@ def insert_crew(cur, movie_id, movie):
             print(
                 f"🎬 Crew '{crew['name']}' ({crew.get('job')}) linked to movie '{movie['movie_title']}'"
             )
+
+def process_bulk_movie_ids(conn, id_list, media_type, fetch_tmdb_movie):
+    """
+    Processes a list of TMDb movie IDs by fetching their data and inserting/updating them.
+    """
+    for raw_id in id_list:
+        movie_id = raw_id.strip()
+        if not movie_id:
+            continue
+
+        try:
+            movie_data = fetch_tmdb_movie(movie_id)
+            if not movie_data:
+                print(f"❌ No data returned for movie_id={movie_id}")
+                continue
+
+            insert_or_update_movie_data(conn, movie_data, media_type)
+
+        except Exception as e:
+            print(f"❌ Error processing movie_id={movie_id}: {e}")
+            traceback.print_exc()

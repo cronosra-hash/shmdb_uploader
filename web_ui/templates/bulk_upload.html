@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-wrapper">
+  <div class="panel">
+    <h2>🎬 Bulk Upload/Update</h2>
+    <form method="POST" action="/bulk-upload">
+      <label for="id_list">Enter up to 100 TMDb IDs (comma or newline separated):</label>
+      <textarea name="id_list" rows="10" cols="60" required></textarea>
+
+      <label for="media_type">Media Type:</label>
+      <select name="media_type" required>
+        <option value="movie">Movie</option>
+        <option value="tv">Series</option>
+      </select>
+
+      <button type="submit" class="btn">Submit</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -15,6 +15,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+import traceback
 
 # ─── Internal Project Imports ────────────────────────────────────────────────
 from config.settings import TMDB_API_KEY
@@ -793,6 +794,131 @@ async def upload(request: Request, tmdb_id: int, media_type: str):
             "now": datetime.now(),
         },
     )
+
+
+@app.get("/bulk-upload", response_class=HTMLResponse)
+async def bulk_upload_form(request: Request):
+    return templates.TemplateResponse(
+        "bulk_upload.html",
+        {
+            "request": request,
+            "now": datetime.now(),  # ✅ Add this line
+        },
+    )
+
+
+@app.post("/bulk-upload", response_class=HTMLResponse)
+async def bulk_upload(
+    request: Request, media_type: str = Form(...), id_list: str = Form(...)
+):
+    conn = None
+    grouped_results = []
+    now = datetime.now()
+
+    try:
+        conn = get_connection()
+        ids = [i.strip() for i in id_list.replace(",", "\n").splitlines() if i.strip()]
+        ids = ids[:100]
+
+        for tmdb_id in ids:
+            try:
+                previous_max = get_previous_log_timestamp(conn, tmdb_id, media_type)
+                if previous_max is None:
+                    previous_max = datetime.min
+
+                # Upload and get content ID
+                content_id, base_message = process_media_upload(
+                    conn, tmdb_id, media_type
+                )
+
+                # Default values
+                title = ""
+                filtered = []
+                message = ""
+
+                if content_id:
+                    changes = fetch_new_update_logs(
+                        conn, content_id, media_type, previous_max
+                    )
+                    filtered = filter_changes(changes)
+
+                    # Try extracting title from changes
+                    if filtered:
+                        first = filtered[0]
+                        title = (
+                            first.get("title")
+                            or first.get("movie_title")
+                            or first.get("series_title")
+                            or ""
+                        )
+
+                    if not title:
+                        tmdb_data = get_tmdb_data(tmdb_id, media_type)
+                        title = (
+                            tmdb_data.get("title")
+                            or tmdb_data.get("name")
+                            or "Unknown Title"
+                        )
+
+                    message = (
+                        base_message
+                        if filtered
+                        else f"{base_message} No changes needed — already up-to-date."
+                    )
+                else:
+                    message = (
+                        f"{base_message} No movie ID returned — upload may have failed."
+                    )
+
+                grouped_results.append(
+                    {
+                        "tmdb_id": tmdb_id,
+                        "title": title or "Unknown Title",
+                        "message": message,
+                        "changes": filtered,
+                    }
+                )
+
+            except Exception as e:
+                grouped_results.append(
+                    {
+                        "tmdb_id": tmdb_id,
+                        "title": "Error",
+                        "message": f"❌ Error processing ID {tmdb_id}: {str(e)}",
+                        "changes": [],
+                    }
+                )
+                traceback.print_exc()
+
+    finally:
+        if conn:
+            conn.close()
+
+    return templates.TemplateResponse(
+        "bulk_result.html",
+        {
+            "request": request,
+            "results": grouped_results,
+            "media_type": media_type,
+            "upload_status": "Bulk upload complete",
+            "now": now,
+        },
+    )
+
+
+def get_tmdb_data(tmdb_id, media_type):
+    if media_type not in ["movie", "tv"]:
+        raise ValueError(f"Unsupported media type: {media_type}")
+
+    url = f"https://api.themoviedb.org/3/{media_type}/{tmdb_id}"
+    params = {"api_key": TMDB_API_KEY, "language": "en-US"}
+    response = requests.get(url, params=params)
+
+    if response.ok:
+        return response.json()
+    else:
+        print(f"❌ TMDb fetch failed for ID {tmdb_id}: {response.status_code}")
+        return {}
 
 
 def get_previous_log_timestamp(conn, content_id, content_type):
