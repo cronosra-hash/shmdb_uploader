@@ -3,38 +3,36 @@ from config.settings import TMDB_API_KEY  # Import your TMDB API key from the se
 
 def fetch_series(series_id):
     """
-    Fetch detailed information about a TV series from TMDB, including credits and IMDb ID.
+    Fetch detailed information about a TV series from TMDB,
+    including aggregate credits (with episode counts) and IMDb ID.
     
     Args:
         series_id (int or str): The TMDB ID of the TV series.
     
     Returns:
-        dict: A dictionary containing series details, credits, and IMDb ID.
+        dict: A dictionary containing series details, aggregate credits, and IMDb ID.
     """
-    
-    # Construct the base URL for the TV series endpoint
     base_url = f"https://api.themoviedb.org/3/tv/{series_id}"
-    
-    # Define query parameters including API key and request to append credits data
-    params = {"api_key": TMDB_API_KEY, "append_to_response": "credits"}
-    
-    # Make the request to fetch main series data including credits
+
+    # Fetch main series data (without credits here)
+    params = {"api_key": TMDB_API_KEY}
     response = requests.get(base_url, params=params)
-    response.raise_for_status()  # Raise an error if the request fails
-    series_data = response.json()  # Parse the JSON response into a Python dictionary
+    response.raise_for_status()
+    series_data = response.json()
 
-    # Construct the URL to fetch external IDs (e.g., IMDb ID)
+    # Fetch aggregate credits (includes total_episode_count)
+    credits_url = f"{base_url}/aggregate_credits"
+    credits_response = requests.get(credits_url, params={"api_key": TMDB_API_KEY})
+    credits_response.raise_for_status()
+    series_data["aggregate_credits"] = credits_response.json()
+
+    # Fetch external IDs (IMDb ID, etc.)
     ext_url = f"{base_url}/external_ids"
-    
-    # Make the request to fetch external IDs
     ext_response = requests.get(ext_url, params={"api_key": TMDB_API_KEY})
-    ext_response.raise_for_status()  # Raise an error if the request fails
-    external_ids = ext_response.json()  # Parse the JSON response
-
-    # Add the IMDb ID to the series data dictionary, or None if not available
+    ext_response.raise_for_status()
+    external_ids = ext_response.json()
     series_data["imdb_id"] = external_ids.get("imdb_id") or None
 
-    # Return the complete series data including credits and IMDb ID
     return series_data
 
 
