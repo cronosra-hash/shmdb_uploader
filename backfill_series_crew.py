@@ -12,7 +12,7 @@ import requests
 from datetime import datetime
 import json
 
-TMDB_API_KEY = "02e87018a4bae1782f57cb6e119c3d09"
+TMDB_API_KEY = ""
 
 def fetch_series_aggregate_credits(series_id, tmdb_api_key):
     """Fetch aggregate credits for a TV series from TMDb."""
@@ -88,10 +88,10 @@ def backfill_series_crew(conn, tmdb_api_key):
 
 def main():
     conn = psycopg2.connect(
-        dbname="shmdb",
-        user="neondb_owner",
-        password="npg_YF0meUgAXDB5",
-        host="ep-raspy-truth-abxbigmv-pooler.eu-west-2.aws.neon.tech",
+        dbname="",
+        user="",
+        password="",
+        host="",
         port=5432,
     )
 
