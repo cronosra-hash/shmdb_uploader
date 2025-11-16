@@ -424,24 +424,17 @@ def normalize_series_payload(series):
 
 
 def insert_series_cast(cur, series_id, series):
-    """
-    Insert or update cast for a series, including episode_count from TMDb aggregate credits.
-    Expects `series` to contain an "aggregate_credits" block.
-    """
-    # Use aggregate credits (includes total_episode_count)
     cast_list = series.get("aggregate_credits", {}).get("cast", [])[:30]
 
     for cast in cast_list:
         ensure_person_exists(cur, cast)
 
-        # Episode count comes from aggregate credits
         episode_count = cast.get("total_episode_count", 1)
-
-        # Character name is nested under "roles" in aggregate credits
         character_name = None
         if cast.get("roles"):
             character_name = cast["roles"][0].get("character")
 
+        # Try insert, but return whether it was new or updated
         cur.execute(
             """
             INSERT INTO series_cast (
@@ -451,7 +444,8 @@ def insert_series_cast(cur, series_id, series):
             ON CONFLICT (series_id, person_id) DO UPDATE
             SET episode_count = EXCLUDED.episode_count,
                 character_name = COALESCE(EXCLUDED.character_name, series_cast.character_name),
-                last_updated = CURRENT_TIMESTAMP;
+                last_updated = CURRENT_TIMESTAMP
+            RETURNING (xmax = 0) AS inserted;
             """,
             (
                 series_id,
@@ -462,63 +456,16 @@ def insert_series_cast(cur, series_id, series):
             ),
         )
 
-        context = json.dumps(
-            {
-                "action": "link",
-                "entity": "cast",
-                "cast_name": cast["name"],
-                "source": "cast_link_pipeline",
-                "timestamp": datetime.utcnow().isoformat(),
-            }
-        )
+        # Postgres trick: xmax=0 means it was a fresh insert, not an update
+        inserted = cur.fetchone()[0]
 
-        log_update(
-            cur,
-            content_id=series_id,
-            content_title=series["name"],
-            content_type="tv",
-            update_type="cast_added",
-            field_name="cast",
-            previous_value=None,
-            current_value=cast["name"],
-            context=context,
-            source="backend_script",
-            timestamp=datetime.utcnow(),
-        )
-
-        print(f"📺 Cast '{cast['name']}' ({episode_count} episodes) linked to series '{series['name']}'")
-
-
-def insert_series_crew(cur, series_id, series):
-    crew_list = series.get("credits", {}).get("crew", [])
-
-    for crew in crew_list:
-        ensure_person_exists(cur, crew)
-        cur.execute(
-            """
-            SELECT 1 FROM series_crew
-            WHERE series_id = %s AND person_id = %s AND job = %s;
-        """,
-            (series_id, crew["id"], crew.get("job")),
-        )
-
-        if not cur.fetchone():
-            cur.execute(
-                """
-                INSERT INTO series_crew (
-                    series_id, person_id, department, job, last_updated
-                )
-                VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
-                ON CONFLICT DO NOTHING;
-            """,
-                (series_id, crew["id"], crew.get("department"), crew.get("job")),
-            )
+        if inserted:
             context = json.dumps(
                 {
                     "action": "link",
-                    "entity": "crew",
-                    "crew_name": crew_list[0]["name"],
-                    "source": "crew_link_pipeline",
+                    "entity": "cast",
+                    "cast_name": cast["name"],
+                    "source": "cast_link_pipeline",
                     "timestamp": datetime.utcnow().isoformat(),
                 }
             )
@@ -528,16 +475,94 @@ def insert_series_crew(cur, series_id, series):
                 content_id=series_id,
                 content_title=series["name"],
                 content_type="tv",
-                update_type="crew_added",
-                field_name="crew",
+                update_type="cast_added",
+                field_name="cast",
                 previous_value=None,
-                current_value=crew_list[0]["name"],
+                current_value=cast["name"],
                 context=context,
                 source="backend_script",
                 timestamp=datetime.utcnow(),
             )
 
-            print(f"📺 Crew '{crew_list[0]['name']}' linked to series '{series['name']}'")
+            print(f"📺 Cast '{cast['name']}' ({episode_count} episodes) linked to series '{series['name']}'")
+        else:
+            print(f"↔️ Cast '{cast['name']}' already linked, updated episode_count={episode_count}")
+
+
+from datetime import datetime
+import json
+
+def insert_series_crew(cur, series_id, series):
+    crew_list = series.get("aggregate_credits", {}).get("crew", [])
+    if not crew_list:
+        return
+
+    for crew in crew_list:
+        ensure_person_exists(cur, crew)
+
+        department = crew.get("department")
+
+        # Extract job(s) correctly from jobs array
+        jobs = []
+        if crew.get("jobs"):
+            jobs = [j.get("job") for j in crew["jobs"] if j.get("job")]
+        if not jobs:
+            jobs = ["Unknown"]
+
+        for job in jobs:
+            # Check if this crew entry already exists
+            cur.execute(
+                """
+                SELECT 1 FROM series_crew
+                WHERE series_id = %s AND person_id = %s AND job = %s;
+                """,
+                (series_id, crew["id"], job),
+            )
+
+            if not cur.fetchone():
+                # Insert new crew record
+                cur.execute(
+                    """
+                    INSERT INTO series_crew (
+                        series_id, person_id, department, job, last_updated
+                    )
+                    VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
+                    ON CONFLICT DO NOTHING;
+                    """,
+                    (series_id, crew["id"], department, job),
+                )
+
+                # Build logging context
+                context = json.dumps(
+                    {
+                        "action": "link",
+                        "entity": "crew",
+                        "crew_name": crew["name"],
+                        "job": job,
+                        "source": "crew_link_pipeline",
+                        "timestamp": datetime.utcnow().isoformat(),
+                    }
+                )
+
+                # Log the update
+                log_update(
+                    cur,
+                    content_id=series_id,
+                    content_title=series["name"],
+                    content_type="tv",
+                    update_type="crew_added",
+                    field_name="crew",
+                    previous_value=None,
+                    current_value=f"{crew['name']} ({job})",
+                    context=context,
+                    source="backend_script",
+                    timestamp=datetime.utcnow(),
+                )
+
+                print(f"📺 Crew '{crew['name']}' ({department} / {job}) linked to series '{series['name']}'")
+            else:
+                # Optional: log or print updates when already present
+                print(f"↔️ Crew '{crew['name']}' ({job}) already linked to series '{series['name']}'")
 
 
 def insert_series_genres(cur, series_id, series):
