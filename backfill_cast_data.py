@@ -4,7 +4,7 @@ import requests
 from datetime import datetime
 import json
 
-TMDB_API_KEY = "02e87018a4bae1782f57cb6e119c3d09"
+TMDB_API_KEY = ""
 
 
 def fetch_series_credits(series_id, tmdb_api_key):
@@ -80,9 +80,9 @@ def backfill_cast_data(conn, tmdb_api_key):
 if __name__ == "__main__":
     conn = psycopg2.connect(
         dbname="shmdb",
-        user="neondb_owner",
-        password="npg_YF0meUgAXDB5",
-        host="ep-raspy-truth-abxbigmv-pooler.eu-west-2.aws.neon.tech",
+        user="",
+        password="",
+        host="",
         port=5432,
     )
     backfill_cast_data(conn, TMDB_API_KEY)
