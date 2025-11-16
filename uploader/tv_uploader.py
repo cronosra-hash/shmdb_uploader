@@ -489,9 +489,6 @@ def insert_series_cast(cur, series_id, series):
             print(f"↔️ Cast '{cast['name']}' already linked, updated episode_count={episode_count}")
 
 
-from datetime import datetime
-import json
-
 def insert_series_crew(cur, series_id, series):
     crew_list = series.get("aggregate_credits", {}).get("crew", [])
     if not crew_list:
