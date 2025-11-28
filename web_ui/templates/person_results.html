@@ -7,64 +7,87 @@
   <h2 class="page-title">Search Results</h2>
 
   {% for person in people %}
-    <div class="card fadeInUp">
-      <div class="person-meta">
-        {% if person.profile_path %}
-          <img src="https://image.tmdb.org/t/p/w200{{ person.profile_path }}" alt="{{ person.name }}">
-        {% endif %}
-        <div class="person-details">
-          <h3>{{ person.name }}</h3>
-          <p><strong>Known for:</strong> {{ person.known_for_department }}</p>
-          <p><strong>Birthday:</strong> {{ person.birthday or 'N/A' }}</p>
-          <p><strong>Place of Birth:</strong> {{ person.place_of_birth or 'N/A' }}</p>
-          {% if person.also_known_as %}
-            <p><strong>Also Known As:</strong> {{ person.also_known_as | join(', ') }}</p>
-          {% endif %}
-          {% if person.biography %}
-            <details>
-              <summary>Biography</summary>
-              <p>{{ person.biography }}</p>
-            </details>
-          {% endif %}
-        </div>
-      </div>
-
-      {% if person.credits | length == 0 %}
-        <span class="badge badge-warning">⚠ No credits found</span>
+  <div class="card fadeInUp">
+    <div class="person-meta">
+      {% if person.profile_path %}
+      <img src="https://image.tmdb.org/t/p/w200{{ person.profile_path }}" alt="{{ person.name }}">
       {% endif %}
-
-      <details class="credits-toggle" {% if person.credits | length > 0 %}open{% endif %}>
-        <summary class="credits-summary">Credits</summary>
-        <div class="credits-table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Type</th>
-                <th>Date</th>
-                <th>In DB</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for credit in person.credits %}
-                <tr>
-                  <td>{{ credit.title or credit.name }}</td>
-                  <td>{{ credit.media_type | capitalize }}</td>
-                  <td>{{ credit.release_date or credit.first_air_date or 'N/A' }}</td>
-                  <td>
-                    {% if credit.exists %}
-                      <span class="badge badge-success">✅ In DB</span>
-                    {% else %}
-                      <span class="badge badge-secondary">❌ Not in DB</span>
-                    {% endif %}
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </details>
+      <div class="person-details">
+        <h3>{{ person.name }}</h3>
+        <p><strong>Known for:</strong> {{ person.known_for_department }}</p>
+        <p><strong>Birthday:</strong> {{ person.birthday or 'N/A' }}</p>
+        <p><strong>Place of Birth:</strong> {{ person.place_of_birth or 'N/A' }}</p>
+        {% if person.also_known_as %}
+        <p><strong>Also Known As:</strong> {{ person.also_known_as | join(', ') }}</p>
+        {% endif %}
+        {% if person.biography %}
+        <details>
+          <summary>Biography</summary>
+          <p>{{ person.biography }}</p>
+        </details>
+        {% endif %}
+      </div>
     </div>
+
+    {% if person.credits | length == 0 %}
+    <span class="badge badge-warning">⚠ No credits found</span>
+    {% endif %}
+
+    <details class="credits-toggle" {% if person.credits | length> 0 %}open{% endif %}>
+      <summary class="credits-summary">Credits</summary>
+      <div class="credits-table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Date</th>
+              <th>In DB</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for credit in person.credits %}
+            <tr>
+              <td>
+                {{ credit.title or credit.name }}
+                <span class="external-links">
+                  <!-- Internal DB link (optional placeholder icon) -->
+                  {% if credit.exists %}
+                  <a href="/title/{{ credit.media_type }}/{{ credit.id }}" title="Details">
+                    <img src="/static/icons/shmdb-logo.png" alt="Details" width="16" height="16">
+                  </a>
+                  {% endif %}
+
+                  <!-- IMDb link -->
+                  {% if credit.imdb_id %}
+                  <a href="https://www.imdb.com/title/{{ credit.imdb_id }}" target="_blank" rel="noopener">
+                    <img src="/static/icons/imdb.svg" alt="IMDb" width="20" height="12">
+                  </a>
+                  {% endif %}
+
+                  <!-- TMDb link -->
+                  <a href="https://www.themoviedb.org/{{ credit.media_type }}/{{ credit.id }}" target="_blank"
+                    rel="noopener" title="TMDb">
+                    <img src="/static/icons/tmdb.svg" alt="TMDb" width="16" height="16">
+                  </a>
+                </span>
+              </td>
+              <td>{{ credit.media_type | capitalize }}</td>
+              <td>{{ credit.release_date or credit.first_air_date or 'N/A' }}</td>
+              <td>
+                {% if credit.exists %}
+                <span class="badge badge-success">✅ In DB</span>
+                {% else %}
+                <span class="badge badge-secondary">❌ Not in DB</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
   {% endfor %}
 </div>
 {% endblock %}

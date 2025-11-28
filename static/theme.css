@@ -2045,3 +2045,36 @@ li a .badge {
   font-size: 0.7rem;
   font-weight: 500;
 }
+
+/* ──────────────────────────────────────────────── */
+/* ICONS */
+/* ──────────────────────────────────────────────── */
+
+/* Container for all icons */
+.external-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem; /* space between icons */
+  margin-left: 0.5rem; /* space from the title text */
+}
+
+/* Icon images */
+.external-links img {
+  height: 16px; /* normalize icon size */
+  width: auto;
+  vertical-align: middle;
+  opacity: 0.75;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Hover effect */
+.external-links a:hover img {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* Optional: make them look like subtle buttons */
+.external-links a {
+  display: inline-flex;
+  align-items: center;
+}
