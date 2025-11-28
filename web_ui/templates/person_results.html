@@ -41,7 +41,7 @@
             <tr>
               <th>Title</th>
               <th>Type</th>
-              <th>Date</th>
+              <th>Year</th>
               <th>In DB</th>
             </tr>
           </thead>
@@ -73,7 +73,15 @@
                 </span>
               </td>
               <td>{{ credit.media_type | capitalize }}</td>
-              <td>{{ credit.release_date or credit.first_air_date or 'N/A' }}</td>
+              <td>
+                {% if credit.release_date %}
+                {{ credit.release_date[:4] }}
+                {% elif credit.first_air_date %}
+                {{ credit.first_air_date[:4] }}
+                {% else %}
+                N/A
+                {% endif %}
+              </td>
               <td>
                 {% if credit.exists %}
                 <span class="badge badge-success">✅ In DB</span>
