@@ -1099,6 +1099,9 @@ def search_person_tmdb(name):
                             else credit.get("first_air_date")
                         )
 
+                        # Extract release year
+                        credit["release_year"] = date_str[:4] if date_str else None
+
                         # Check existence in DB
                         if media_type == "movie":
                             cur.execute("SELECT 1 FROM movies WHERE movie_id = %s;", (tmdb_id,))
@@ -1111,7 +1114,7 @@ def search_person_tmdb(name):
 
                         credit["exists"] = cur.fetchone() is not None
 
-                        # 🔧 Enrich with IMDb ID
+                        # Enrich with IMDb ID
                         if media_type == "movie":
                             detail_url = f"https://api.themoviedb.org/3/movie/{tmdb_id}"
                             resp = requests.get(detail_url, params={"api_key": TMDB_API_KEY})
@@ -1131,8 +1134,11 @@ def search_person_tmdb(name):
                         except Exception:
                             credit["sort_date"] = None
 
-                    # Sort credits in descending order
-                    credits.sort(key=lambda x: x.get("sort_date") or datetime.min, reverse=True)
+                    # ✅ Sort credits: N/A years first, then newest to oldest
+                    credits.sort(
+                        key=lambda c: (c["release_year"] is None, c["release_year"] or 0),
+                        reverse=True
+                    )
                     person["credits"] = credits
     finally:
         conn.close()
