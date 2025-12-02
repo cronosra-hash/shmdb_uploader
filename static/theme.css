@@ -2078,3 +2078,30 @@ li a .badge {
   display: inline-flex;
   align-items: center;
 }
+
+.badge-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.badge-btn .badge {
+  pointer-events: none; /* keeps badge look consistent */
+}
+
+/* ──────────────────────────────────────────────── */
+/* PERSON STATS */
+/* ──────────────────────────────────────────────── */
+
+.person-stats {
+  margin-top: 0.75em;
+  font-size: 0.95em;
+  color: #444;
+}
+
+.person-stats p {
+  margin: 0;
+  padding: 0.25em 0;
+  font-weight: 500;
+}
+

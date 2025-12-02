@@ -14,6 +14,19 @@
       {% endif %}
       <div class="person-details">
         <h3>{{ person.name }}</h3>
+        <div class="person-stats">
+          <p>
+            Total Credits: {{ person.credits | length }} ·
+            In DB: {{ person.credits | selectattr('exists') | list | length }} ·
+            Not in DB: {{ person.credits | rejectattr('exists') | list | length }} ·
+            Completion: {{
+            (
+            (person.credits | selectattr('exists') | list | length) /
+            (person.credits | length if person.credits | length > 0 else 1) * 100
+            ) | round(0)
+            }}%
+          </p>
+        </div>
         <p><strong>Known for:</strong> {{ person.known_for_department }}</p>
         <p><strong>Birthday:</strong> {{ person.birthday or 'N/A' }}</p>
         <p><strong>Place of Birth:</strong> {{ person.place_of_birth or 'N/A' }}</p>
@@ -83,11 +96,17 @@
                 {% endif %}
               </td>
               <td>
-                {% if credit.exists %}
-                <span class="badge badge-success">✅ In DB</span>
-                {% else %}
-                <span class="badge badge-secondary">❌ Not in DB</span>
-                {% endif %}
+                <form method="post" action="/tmdb_search" class="action-form">
+                  <input type="hidden" name="tmdb_id" value="{{ credit.id }}">
+                  <input type="hidden" name="media_type" value="{{ credit.media_type }}">
+                  <button type="submit" class="badge-btn">
+                    {% if credit.exists %}
+                    <span class="badge badge-success">✅ In DB</span>
+                    {% else %}
+                    <span class="badge badge-secondary">❌ Not in DB</span>
+                    {% endif %}
+                  </button>
+                </form>
               </td>
             </tr>
             {% endfor %}
