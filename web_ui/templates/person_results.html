@@ -45,6 +45,29 @@
     {% if person.credits | length == 0 %}
     <span class="badge badge-warning">⚠ No credits found</span>
     {% endif %}
+    <form method="get" class="filter-form">
+      <input type="hidden" name="person_name" value="{{ person.name }}">
+      <label for="type_filter">Show:</label>
+      <select name="type" id="type_filter" onchange="this.form.submit()">
+        <option value="all" {% if request.query_params.get('type')=='all' %}selected{% endif %}>All</option>
+        <option value="movie" {% if request.query_params.get('type')=='movie' %}selected{% endif %}>Movies</option>
+        <option value="tv" {% if request.query_params.get('type')=='tv' %}selected{% endif %}>TV Shows</option>
+      </select>
+    </form>
+    {% set movies = person.credits | selectattr('media_type', 'equalto', 'movie') | list %}
+    {% set tvshows = person.credits | selectattr('media_type', 'equalto', 'tv') | list %}
+    <p class="credit-counts">
+      {% set filter_type = request.query_params.get('type', 'all') %}
+
+{% if filter_type == 'movie' %}
+  <p class="credit-counts">{{ movies|length }} movies</p>
+{% elif filter_type == 'tv' %}
+  <p class="credit-counts">{{ tvshows|length }} TV shows</p>
+{% else %}
+  <p class="credit-counts">{{ movies|length }} movies · {{ tvshows|length }} TV shows</p>
+{% endif %}
+
+    </p>
 
     <details class="credits-toggle" {% if person.credits | length> 0 %}open{% endif %}>
       <summary class="credits-summary">Credits</summary>
@@ -55,37 +78,40 @@
               <th>Title</th>
               <th>Type</th>
               <th>Year</th>
+              <th>Role</th>
               <th>In DB</th>
             </tr>
           </thead>
           <tbody>
+            {% set filter_type = request.query_params.get('type', 'all') %}
+
             {% for credit in person.credits %}
+            {% if filter_type == 'all' or credit.media_type == filter_type %}
             <tr>
               <td>
                 {{ credit.title or credit.name }}
                 <span class="external-links">
-                  <!-- Internal DB link (optional placeholder icon) -->
                   {% if credit.exists %}
                   <a href="/title/{{ credit.media_type }}/{{ credit.id }}" title="Details">
                     <img src="/static/icons/shmdb-logo.png" alt="Details" width="16" height="16">
                   </a>
                   {% endif %}
 
-                  <!-- IMDb link -->
                   {% if credit.imdb_id %}
                   <a href="https://www.imdb.com/title/{{ credit.imdb_id }}" target="_blank" rel="noopener">
                     <img src="/static/icons/imdb.svg" alt="IMDb" width="20" height="12">
                   </a>
                   {% endif %}
 
-                  <!-- TMDb link -->
                   <a href="https://www.themoviedb.org/{{ credit.media_type }}/{{ credit.id }}" target="_blank"
                     rel="noopener" title="TMDb">
                     <img src="/static/icons/tmdb.svg" alt="TMDb" width="16" height="16">
                   </a>
                 </span>
               </td>
+
               <td>{{ credit.media_type | capitalize }}</td>
+
               <td>
                 {% if credit.release_date %}
                 {{ credit.release_date[:4] }}
@@ -95,6 +121,17 @@
                 N/A
                 {% endif %}
               </td>
+
+              <td>
+                {% if credit.character %}
+                {{ credit.character }}
+                {% elif credit.job %}
+                {{ credit.job }}
+                {% else %}
+                N/A
+                {% endif %}
+              </td>
+
               <td>
                 <form method="post" action="/tmdb_search" class="action-form">
                   <input type="hidden" name="tmdb_id" value="{{ credit.id }}">
@@ -109,6 +146,7 @@
                 </form>
               </td>
             </tr>
+            {% endif %}
             {% endfor %}
           </tbody>
         </table>

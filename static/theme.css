@@ -2105,3 +2105,22 @@ li a .badge {
   font-weight: 500;
 }
 
+
+
+
+
+
+.filter-form {
+  margin-bottom: 10px;
+}
+
+.filter-form select {
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.credit-counts {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 8px;
+}

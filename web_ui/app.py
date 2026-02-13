@@ -501,11 +501,18 @@ def classify_freshness(lastupdated):
         return "stale"
 
 
-@app.post("/search_person", response_class=HTMLResponse)
+@app.api_route("/search_person", methods=["GET", "POST"], response_class=HTMLResponse)
 async def search_person(request: Request):
-    form = await request.form()
-    name = form.get("person_name")
-    people = search_person_tmdb(name)
+    if request.method == "POST":
+        form = await request.form()
+        name = form.get("person_name")
+        people = search_person_tmdb(name)
+    else:
+        # GET request — reuse previous search results
+        # You need to store the last search somewhere
+        name = request.query_params.get("person_name")
+        people = search_person_tmdb(name) if name else []
+
     return templates.TemplateResponse(
         "person_results.html",
         {
