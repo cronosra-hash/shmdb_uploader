@@ -501,7 +501,7 @@ def insert_production_countries(cur, movie_id, movie):
 
 
 def insert_cast(cur, movie_id, movie):
-    for cast in movie.get("credits", {}).get("cast", [])[:10]:
+    for cast in movie.get("credits", {}).get("cast", []):
         cur.execute(
             """
             INSERT INTO people (person_id, name, gender, profile_path, known_for_department, popularity)

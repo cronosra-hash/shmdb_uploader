@@ -424,7 +424,7 @@ def normalize_series_payload(series):
 
 
 def insert_series_cast(cur, series_id, series):
-    cast_list = series.get("aggregate_credits", {}).get("cast", [])[:30]
+    cast_list = series.get("aggregate_credits", {}).get("cast", [])
 
     for cast in cast_list:
         ensure_person_exists(cur, cast)
