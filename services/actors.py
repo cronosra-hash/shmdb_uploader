@@ -1,5 +1,7 @@
-from db.connection import get_connection
+from db.connection import get_connection, release_connection
 import psycopg2.extras
+
+from db.helpers import dict_cursor
 
 
 def get_cast_for_title(title_id: int, title_type: str):
@@ -30,8 +32,7 @@ def get_cast_for_title(title_id: int, title_type: str):
     else:
         return []
 
-    db = get_connection()
-    with db.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+    with dict_cursor() as cursor:
         cursor.execute(query, (title_id,))
         return cursor.fetchall()
 
@@ -63,7 +64,6 @@ def get_crew_for_title(title_id: int, title_type: str):
     else:
         return []
 
-    db = get_connection()
-    with db.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+    with dict_cursor() as cursor:
         cursor.execute(query, (title_id,))
         return cursor.fetchall()

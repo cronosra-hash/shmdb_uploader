@@ -1,5 +1,7 @@
-from db.connection import get_connection
+from db.connection import get_connection, release_connection
 import psycopg2.extras
+
+from db.helpers import dict_cursor
 
 def get_titles_missing(field: str):
     column = FIELD_MAP.get(field)
@@ -23,8 +25,7 @@ def get_titles_missing(field: str):
         LEFT JOIN movie_metadata mm ON mm.movie_id = m.movie_id
         WHERE m.{column} IS NULL OR m.{column} = ''
     """
-    db = get_connection()
-    with db.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+    with dict_cursor() as cursor:
         cursor.execute(query)
         return cursor.fetchall()
 

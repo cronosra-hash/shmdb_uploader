@@ -59,14 +59,13 @@
     <p class="credit-counts">
       {% set filter_type = request.query_params.get('type', 'all') %}
 
-{% if filter_type == 'movie' %}
-  <p class="credit-counts">{{ movies|length }} movies</p>
-{% elif filter_type == 'tv' %}
-  <p class="credit-counts">{{ tvshows|length }} TV shows</p>
-{% else %}
-  <p class="credit-counts">{{ movies|length }} movies · {{ tvshows|length }} TV shows</p>
-{% endif %}
-
+      {% if filter_type == 'movie' %}
+    <p class="credit-counts">{{ movies|length }} movies</p>
+    {% elif filter_type == 'tv' %}
+    <p class="credit-counts">{{ tvshows|length }} TV shows</p>
+    {% else %}
+    <p class="credit-counts">{{ movies|length }} movies · {{ tvshows|length }} TV shows</p>
+    {% endif %}
     </p>
 
     <details class="credits-toggle" {% if person.credits | length> 0 %}open{% endif %}>
@@ -75,6 +74,7 @@
         <table>
           <thead>
             <tr>
+              <th>Id</th>
               <th>Title</th>
               <th>Type</th>
               <th>Year</th>
@@ -84,10 +84,10 @@
           </thead>
           <tbody>
             {% set filter_type = request.query_params.get('type', 'all') %}
-
             {% for credit in person.credits %}
             {% if filter_type == 'all' or credit.media_type == filter_type %}
             <tr>
+              <td>{{ credit.id }}</td>
               <td>
                 {{ credit.title or credit.name }}
                 <span class="external-links">

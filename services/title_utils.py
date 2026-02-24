@@ -1,5 +1,6 @@
 import psycopg2
-from db.connection import get_connection
+from db.connection import get_connection, release_connection
+from db.helpers import dict_cursor
 
 def get_related_titles(title_id: int, title_type: str):
     if title_type == "movie":
@@ -45,7 +46,5 @@ def get_related_titles(title_id: int, title_type: str):
     else:
         return []
 
-    db = get_connection()
-    with db.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+    with dict_cursor() as cursor:
         cursor.execute(query, params)
-        return cursor.fetchall()

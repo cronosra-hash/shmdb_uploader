@@ -1,7 +1,7 @@
-import psycopg2.extras
 from pathlib import Path
-from db.connection import get_connection
 from zoneinfo import ZoneInfo
+
+from db.helpers import dict_cursor
 
 QUERIES_DIR = Path(__file__).parent.parent / "queries"
 
@@ -10,8 +10,7 @@ def load_query(name: str) -> str:
 
 def fetch_stat(query_name: str):
     query = load_query(query_name)
-    db = get_connection()
-    with db.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+    with dict_cursor() as cursor:
         cursor.execute(query)
         return cursor.fetchall()
 

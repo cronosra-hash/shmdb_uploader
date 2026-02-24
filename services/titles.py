@@ -1,5 +1,7 @@
-from db.connection import get_connection
+from db.connection import get_connection, release_connection
 import psycopg2.extras
+
+from db.helpers import dict_cursor
 
 
 def get_title_by_id(title_id: int):
@@ -33,8 +35,7 @@ def get_title_by_id(title_id: int):
         JOIN movie_metadata mm ON mm.movie_id = m.movie_id
         WHERE m.movie_id = %s
     """
-    db = get_connection()
-    with db.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+    with dict_cursor() as cursor:
         cursor.execute(query, (title_id,))
         rows = cursor.fetchall()
 
@@ -96,8 +97,7 @@ def get_series_by_id(series_id: int):
         ) AS watch_range ON watch_range.series_id = s.series_id
         WHERE s.series_id = %s;
     """
-    db = get_connection()
-    with db.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+    with dict_cursor() as cursor:
         cursor.execute(query, (series_id,))
         rows = cursor.fetchall()
 
@@ -159,11 +159,8 @@ def get_movie_titles_missing(field: str):
         FROM movies
         WHERE {condition}
     """
-    db = get_connection()
-    with db.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+    with dict_cursor() as cursor:
         cursor.execute(query)
-        return cursor.fetchall()
-
 
 MOVIE_FIELD_MAP = {
     "missing_overview": "overview",
@@ -204,11 +201,8 @@ def get_tv_titles_missing(field: str):
         FROM series
         WHERE {condition}
     """
-    db = get_connection()
-    with db.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+    with dict_cursor() as cursor:
         cursor.execute(query)
-        return cursor.fetchall()
-
 
 TV_FIELD_MAP = {
     "missing_overview": "overview",

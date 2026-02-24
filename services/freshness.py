@@ -1,7 +1,9 @@
-from db.connection import get_connection
+from db.connection import get_connection, release_connection
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import psycopg2.extras
+
+from db.helpers import dict_cursor
 
 def classify_freshness(last_updated):
     if not last_updated:
@@ -24,8 +26,7 @@ def get_freshness_summary():
     query = """
         SELECT movie_title, last_updated FROM movies WHERE last_updated IS NOT NULL;
     """
-    db = get_connection()
-    with db.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+    with dict_cursor() as cursor:
         cursor.execute(query)
         rows = cursor.fetchall()
 

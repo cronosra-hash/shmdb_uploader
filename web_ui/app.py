@@ -20,6 +20,7 @@ import traceback
 # ─── Internal Project Imports ────────────────────────────────────────────────
 from config.settings import TMDB_API_KEY
 from db.connection import get_connection
+from db.helpers import dict_cursor
 from uploader.movie_uploader import insert_or_update_movie_data
 from uploader.tv_uploader import (
     insert_or_update_series_data,
@@ -27,7 +28,9 @@ from uploader.tv_uploader import (
     sync_series_seasons,
 )
 from tmdb.movie_api import get_movie_data
+from tmdb.search_api import search_tmdb_combined
 from tmdb.tv_api import fetch_series, fetch_all_episodes
+from services.logs import get_previous_log_timestamp
 from services import stats
 from services.freshness import get_freshness_summary  # or wherever you define it
 from services.titles import (
@@ -156,8 +159,7 @@ async def db_search_results(
         WHERE {series_where}
     """
 
-    db = get_connection()
-    with db.cursor(cursor_factory=RealDictCursor) as cursor:
+    with dict_cursor() as cursor:
         cursor.execute(query, params)
         results = cursor.fetchall()
 
@@ -189,7 +191,7 @@ async def title_detail(request: Request, title_type: str, title_id: int):
     if title_type == "movie":
         diagnostics = wrap_query("get_title_by_id", lambda: [get_title_by_id(title_id)])
 
-        with db.cursor(cursor_factory=RealDictCursor) as cur:
+        with dict_cursor() as cur:
             cur.execute(
                 """
                 SELECT rating
@@ -335,11 +337,9 @@ def get_seasons_for_series(series_id: int):
         WHERE series_id = %s
         ORDER BY season_number
     """
-    db = get_connection()
-    with db.cursor(cursor_factory=RealDictCursor) as cursor:
+    with dict_cursor() as cursor:
         cursor.execute(query, (series_id,))
         return cursor.fetchall()
-
 
 def get_episodes_for_season(season_id: int):
     query = """
@@ -697,16 +697,10 @@ async def tmdb_search(request: Request):
 
 
 def annotate_results_with_db_status(results):
-    conn = get_connection()
-    annotated = []
-
-    try:
-        with conn.cursor() as cur:
-            for result in results:
-                annotated.append(annotate_result(cur, result))
-    finally:
-        conn.close()
-
+    with dict_cursor() as cur:
+        annotated = []
+        for result in results:
+            annotated.append(annotate_result(cur, result))
     return annotated
 
 
@@ -927,21 +921,6 @@ def get_tmdb_data(tmdb_id, media_type):
         print(f"❌ TMDb fetch failed for ID {tmdb_id}: {response.status_code}")
         return {}
 
-
-def get_previous_log_timestamp(conn, content_id, content_type):
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT MAX(timestamp)
-            FROM update_logs
-            WHERE content_id = %s AND content_type = %s;
-            """,
-            (content_id, content_type),
-        )
-        result = cur.fetchone()
-        return result[0] or datetime.min
-
-
 def process_media_upload(conn, tmdb_id, media_type):
     if media_type == "movie":
         movie_data = get_movie_data(tmdb_id)
@@ -1034,39 +1013,6 @@ def filter_changes(raw_changes):
         filtered.append(change)
 
     return filtered
-
-
-def search_tmdb_combined(name):
-    endpoints = ["movie", "tv"]
-    combined_results = []
-
-    for media_type in endpoints:
-        url = f"https://api.themoviedb.org/3/search/{media_type}"
-        params = {"api_key": TMDB_API_KEY, "query": name, "include_adult": False}
-        response = requests.get(url, params=params)
-        if response.status_code == 200:
-            results = response.json().get("results", [])
-            for result in results:
-                result["media_type"] = media_type
-
-                # Enrich with imdb_id
-                detail_url = (
-                    f"https://api.themoviedb.org/3/movie/{result['id']}"
-                    if media_type == "movie"
-                    else f"https://api.themoviedb.org/3/tv/{result['id']}/external_ids"
-                )
-                detail_response = requests.get(
-                    detail_url, params={"api_key": TMDB_API_KEY}
-                )
-                if detail_response.status_code == 200:
-                    detail_data = detail_response.json()
-                    result["imdb_id"] = detail_data.get("imdb_id")
-
-                combined_results.append(result)
-
-    combined_results.sort(key=lambda x: x.get("popularity", 0), reverse=True)
-    return combined_results
-
 
 def search_person_tmdb(name):
     url = "https://api.themoviedb.org/3/search/person"

@@ -1,4 +1,4 @@
-from db.connection import get_connection
+from db.connection import get_connection, release_connection
 from tmdb.movie_api import get_movie_data
 from uploader.movie_uploader import insert_or_update_movie_data
 
@@ -18,7 +18,7 @@ def main():
                 print(f"❌ Error processing movie ID {movie_id}: {e}")
                 conn.rollback()
     finally:
-        conn.close()
+        release_connection(conn)
 
 if __name__ == "__main__":
     main()
