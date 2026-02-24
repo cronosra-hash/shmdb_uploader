@@ -1,3 +1,4 @@
+# tmdb/search_api.py
 import requests
 from config.settings import TMDB_API_KEY
 from datetime import datetime
@@ -32,3 +33,21 @@ def search_tmdb_combined(name):
 
     combined_results.sort(key=lambda x: x.get("popularity", 0), reverse=True)
     return combined_results
+
+def get_tmdb_data(tmdb_id, media_type):
+    """
+    Generic TMDb fetcher for movies and TV series.
+    """
+    if media_type not in ["movie", "tv"]:
+        raise ValueError(f"Unsupported media type: {media_type}")
+
+    url = f"https://api.themoviedb.org/3/{media_type}/{tmdb_id}"
+    params = {"api_key": TMDB_API_KEY, "language": "en-US"}
+
+    response = requests.get(url, params=params)
+
+    if response.ok:
+        return response.json()
+
+    print(f"❌ TMDb fetch failed for ID {tmdb_id}: {response.status_code}")
+    return {}

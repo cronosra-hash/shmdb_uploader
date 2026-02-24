@@ -21,6 +21,7 @@ import traceback
 from config.settings import TMDB_API_KEY
 from db.connection import get_connection
 from db.helpers import dict_cursor
+from uploader.media_processor import process_media_upload
 from uploader.movie_uploader import insert_or_update_movie_data
 from uploader.tv_uploader import (
     insert_or_update_series_data,
@@ -28,11 +29,16 @@ from uploader.tv_uploader import (
     sync_series_seasons,
 )
 from tmdb.movie_api import get_movie_data
-from tmdb.search_api import search_tmdb_combined
+from tmdb.person_api import search_person_tmdb
+from tmdb.search_api import search_tmdb_combined, get_tmdb_data
 from tmdb.tv_api import fetch_series, fetch_all_episodes
-from services.logs import get_previous_log_timestamp
+from services.logs import ( get_previous_log_timestamp, fetch_new_update_logs, filter_changes, )
 from services import stats
 from services.freshness import get_freshness_summary  # or wherever you define it
+from services.releases import (
+    get_cinema_releases,
+    get_tv_releases,
+)
 from services.titles import (
     get_title_by_id,
     get_series_by_id,
@@ -906,199 +912,6 @@ async def bulk_upload(
         },
     )
 
-
-def get_tmdb_data(tmdb_id, media_type):
-    if media_type not in ["movie", "tv"]:
-        raise ValueError(f"Unsupported media type: {media_type}")
-
-    url = f"https://api.themoviedb.org/3/{media_type}/{tmdb_id}"
-    params = {"api_key": TMDB_API_KEY, "language": "en-US"}
-    response = requests.get(url, params=params)
-
-    if response.ok:
-        return response.json()
-    else:
-        print(f"❌ TMDb fetch failed for ID {tmdb_id}: {response.status_code}")
-        return {}
-
-def process_media_upload(conn, tmdb_id, media_type):
-    if media_type == "movie":
-        movie_data = get_movie_data(tmdb_id)
-        insert_or_update_movie_data(conn, movie_data, media_type)
-        print(f"🎬 Movie '{movie_data.get('title')}' synced (id={movie_data['id']})")
-        return movie_data[
-            "id"
-        ], f"✅ Movie '{movie_data.get('title')}' processed successfully."
-
-    elif media_type == "tv":
-        series_data = fetch_series(tmdb_id)
-        series_id = series_data.get("id")
-        series_name = series_data.get("name")
-
-        print(f"📺 Starting sync for TV Series '{series_name}' (id={series_id})")
-
-        # ✅ Insert/update series first to satisfy foreign key constraints
-        insert_or_update_series_data(conn, series_data, TMDB_API_KEY)
-
-        # 🔄 Now insert seasons
-        with conn.cursor() as cur:
-            sync_series_seasons(cur, series_data)
-
-        # 🔄 Fetch and attach episodes
-        episodes = fetch_all_episodes(series_id)
-        if not episodes:
-            print(f"⚠️ No episodes found for series_id={series_id}")
-        else:
-            print(f"📦 {len(episodes)} episodes fetched for series_id={series_id}")
-        series_data["episodes"] = episodes
-
-        # 🔄 Sync episodes
-        with conn.cursor() as cur:
-            sync_series_episodes(cur, series_id, series_data)
-
-        conn.commit()  # ✅ Ensure inserts are persisted
-
-        print(f"✅ TV Series '{series_name}' synced successfully")
-        return series_id, f"✅ TV Series '{series_name}' processed successfully."
-
-    print(f"❌ Unsupported media type: {media_type}")
-    return None, "❌ Invalid media type selected."
-
-
-def fetch_new_update_logs(conn, content_id, content_type, since):
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT timestamp, update_type, field_name, previous_value, current_value
-            FROM update_logs
-            WHERE content_id = %s AND content_type = %s AND timestamp > %s
-            ORDER BY timestamp DESC;
-            """,
-            (content_id, content_type, since),
-        )
-        logs = cur.fetchall()
-    return [
-        {
-            "timestamp": log[0],
-            "update_type": log[1],
-            "field_name": log[2],
-            "previous_value": log[3],
-            "current_value": log[4],
-        }
-        for log in logs
-    ]
-
-
-def filter_changes(raw_changes):
-    """
-    Filters out changes where previous_value == current_value or both are empty.
-    Formats timestamp for display.
-    """
-    filtered = []
-    for change in raw_changes:
-        old = change.get("previous_value")
-        new = change.get("current_value")
-
-        if (old is None and new is None) or (
-            str(old).strip() == "" and str(new).strip() == ""
-        ):
-            continue
-        if str(old) == str(new):
-            continue
-
-        ts = change.get("timestamp")
-        if isinstance(ts, datetime):
-            change["timestamp"] = ts.strftime("%Y-%m-%d %H:%M:%S")
-
-        filtered.append(change)
-
-    return filtered
-
-def search_person_tmdb(name):
-    url = "https://api.themoviedb.org/3/search/person"
-    params = {"api_key": TMDB_API_KEY, "query": name}
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
-        return []
-
-    people = response.json().get("results", [])
-    conn = get_connection()
-    try:
-        with conn.cursor() as cur:
-            for person in people:
-                person_id = person.get("id")
-
-                # Fetch detailed info
-                detail_url = f"https://api.themoviedb.org/3/person/{person_id}"
-                detail_response = requests.get(detail_url, params={"api_key": TMDB_API_KEY})
-                if detail_response.status_code == 200:
-                    details = detail_response.json()
-                    person["biography"] = details.get("biography")
-                    person["birthday"] = details.get("birthday")
-                    person["place_of_birth"] = details.get("place_of_birth")
-                    person["also_known_as"] = details.get("also_known_as")
-
-                # Fetch credits
-                credits_url = f"https://api.themoviedb.org/3/person/{person_id}/combined_credits"
-                credits_response = requests.get(credits_url, params={"api_key": TMDB_API_KEY})
-                if credits_response.status_code == 200:
-                    credits = credits_response.json().get("cast", [])
-                    for credit in credits:
-                        tmdb_id = credit.get("id")
-                        media_type = credit.get("media_type")
-                        date_str = (
-                            credit.get("release_date")
-                            if media_type == "movie"
-                            else credit.get("first_air_date")
-                        )
-
-                        # Extract release year
-                        credit["release_year"] = date_str[:4] if date_str else None
-
-                        # Check existence in DB
-                        if media_type == "movie":
-                            cur.execute("SELECT 1 FROM movies WHERE movie_id = %s;", (tmdb_id,))
-                        elif media_type == "tv":
-                            cur.execute("SELECT 1 FROM series WHERE series_id = %s;", (tmdb_id,))
-                        else:
-                            credit["exists"] = False
-                            credit["sort_date"] = None
-                            continue
-
-                        credit["exists"] = cur.fetchone() is not None
-
-                        # Enrich with IMDb ID
-                        if media_type == "movie":
-                            detail_url = f"https://api.themoviedb.org/3/movie/{tmdb_id}"
-                            resp = requests.get(detail_url, params={"api_key": TMDB_API_KEY})
-                            if resp.status_code == 200:
-                                credit["imdb_id"] = resp.json().get("imdb_id")
-                        elif media_type == "tv":
-                            external_url = f"https://api.themoviedb.org/3/tv/{tmdb_id}/external_ids"
-                            resp = requests.get(external_url, params={"api_key": TMDB_API_KEY})
-                            if resp.status_code == 200:
-                                credit["imdb_id"] = resp.json().get("imdb_id")
-
-                        # Parse date for sorting
-                        try:
-                            credit["sort_date"] = (
-                                datetime.strptime(date_str, "%Y-%m-%d") if date_str else None
-                            )
-                        except Exception:
-                            credit["sort_date"] = None
-
-                    # ✅ Sort credits: N/A years first, then newest to oldest
-                    credits.sort(
-                        key=lambda c: (c["release_year"] is None, c["release_year"] or 0),
-                        reverse=True
-                    )
-                    person["credits"] = credits
-    finally:
-        conn.close()
-
-    return people
-
-
 TMDB_BASE = "https://api.themoviedb.org/3"
 
 # Cache genre maps
@@ -1164,146 +977,6 @@ def get_month_range(month: int = None, year: int = None) -> List[str]:
     next_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1)
 
     return [now.strftime("%Y-%m"), next_month.strftime("%Y-%m")]
-
-
-def get_cinema_releases(month: int = None, year: int = None) -> List[Dict]:
-    genre_map = get_genre_map("movie")
-    releases = []
-
-    for ym in get_month_range(month, year):
-        y, m = map(int, ym.split("-"))
-        url = f"{TMDB_BASE}/discover/movie"
-        params = {
-            "api_key": TMDB_API_KEY,
-            "sort_by": "popularity.desc",
-            "release_date.gte": f"{y}-{m:02d}-01",
-            "release_date.lte": f"{y}-{m:02d}-31",
-            "with_original_language": "en",
-        }
-
-        response = requests.get(url, params=params)
-        movies = response.json().get("results", [])
-
-        for movie in movies:
-            release_date = movie.get("release_date", "")
-            if isinstance(release_date, str) and release_date.startswith(
-                f"{y}-{m:02d}"
-            ):
-                details = get_movie_details(movie["id"])
-                distributor = ""
-                if details.get("production_companies"):
-                    distributor = details["production_companies"][0].get("name", "")
-                releases.append(
-                    {
-                        "title": movie["title"],
-                        "release_date": datetime.fromisoformat(release_date)
-                        if release_date
-                        else None,
-                        "runtime": details.get("runtime", "Unknown"),
-                        "certification": details.get(
-                            "certification", "Unrated"
-                        ),  # optional: may need fallback
-                        "distributor": distributor or "Unknown",
-                        "genre": " / ".join(
-                            [
-                                genre_map.get(gid, "Unknown")
-                                for gid in movie.get("genre_ids", [])
-                            ]
-                        ),
-                        "poster_path": movie.get("poster_path"),
-                        "source": "TMDb",
-                        "source_url": f"https://www.themoviedb.org/movie/{movie['id']}",
-                    }
-                )
-
-    return releases
-
-
-def get_tv_platform(tv_id: int) -> str:
-    url = f"{TMDB_BASE}/tv/{tv_id}"
-    params = {"api_key": TMDB_API_KEY, "language": "en-GB"}
-    try:
-        response = requests.get(url, params=params, timeout=5)
-        data = response.json()
-        networks = data.get("networks", [])
-        return networks[0]["name"] if networks else "Unknown"
-    except Exception:
-        return "Unknown"
-
-
-def get_tv_releases(month: int = None, year: int = None) -> List[Dict]:
-    genre_map = get_genre_map("tv")
-    releases = []
-
-    for ym in get_month_range(month, year):
-        y, m = map(int, ym.split("-"))
-        url = f"{TMDB_BASE}/discover/tv"
-        params = {
-            "api_key": TMDB_API_KEY,
-            "sort_by": "first_air_date.asc",
-            "first_air_date.gte": f"{y}-{m:02d}-01",
-            "first_air_date.lte": f"{y}-{m:02d}-31",
-            "with_original_language": "en",
-        }
-
-        try:
-            response = requests.get(url, params=params, timeout=5)
-            response.raise_for_status()
-            shows = response.json().get("results", [])
-        except Exception as e:
-            print(f"Error fetching TV releases for {y}-{m:02d}: {e}")
-            continue
-
-        for s in shows:
-            air_date_str = s.get("first_air_date", "")
-            try:
-                air_date = (
-                    datetime.fromisoformat(air_date_str) if air_date_str else None
-                )
-            except ValueError:
-                air_date = None
-
-            if not air_date or air_date.strftime("%Y-%m") != f"{y}-{m:02d}":
-                continue
-
-            # Fetch broadcaster info
-            detail_url = f"{TMDB_BASE}/tv/{s['id']}"
-            detail_params = {"api_key": TMDB_API_KEY}
-            try:
-                detail_response = requests.get(
-                    detail_url, params=detail_params, timeout=5
-                )
-                detail_response.raise_for_status()
-                detail_data = detail_response.json()
-            except Exception as e:
-                print(f"Error fetching TV details for {s['id']}: {e}")
-                continue
-
-            broadcasters = detail_data.get("networks", [])
-            broadcaster_names = [b.get("name") for b in broadcasters if b.get("name")]
-            broadcaster = (
-                ", ".join(broadcaster_names) if broadcaster_names else "Unknown"
-            )
-
-            releases.append(
-                {
-                    "title": s.get("name", "Untitled"),
-                    "release_date": air_date,
-                    "platform": broadcaster,
-                    "genre": " / ".join(
-                        [
-                            genre_map.get(gid, "Unknown")
-                            for gid in s.get("genre_ids", [])
-                        ]
-                    ),
-                    "poster_path": s.get("poster_path"),
-                    "source": "TMDb",
-                    "source_url": f"https://www.themoviedb.org/tv/{s['id']}",
-                }
-            )
-
-    return releases
-
 
 def format_local(dt, fmt="%d %b %Y, %H:%M"):
     if isinstance(dt, str):
