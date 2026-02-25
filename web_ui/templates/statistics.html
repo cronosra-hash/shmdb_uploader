@@ -6,7 +6,7 @@
 
 {% block content %}
 <div class="page-wrapper">
-    <a href="{{ url_for('read_root') }}" class="back-button">← Back to Index</a>
+    <a href="{{ url_for('index') }}" class="back-button">← Back to Index</a>
     <div class="grid-container">
         {% include "partials/stats/_active_release_years.html" %}
         {% include "partials/stats/_hidden_gems.html" %}

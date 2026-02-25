@@ -11,8 +11,7 @@ import requests
 from typing import List, Dict
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, APIRouter, Form
-from fastapi.responses import HTMLResponse
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import traceback
@@ -32,9 +31,13 @@ from tmdb.movie_api import get_movie_data
 from tmdb.person_api import search_person_tmdb
 from tmdb.search_api import search_tmdb_combined, get_tmdb_data
 from tmdb.tv_api import fetch_series, fetch_all_episodes
-from services.logs import ( get_previous_log_timestamp, fetch_new_update_logs, filter_changes, )
+from services.logs import (
+    get_previous_log_timestamp,
+    fetch_new_update_logs,
+    filter_changes,
+)
 from services import stats
-from services.freshness import get_freshness_summary  # or wherever you define it
+from services.freshness import get_freshness_summary
 from services.releases import (
     get_cinema_releases,
     get_tv_releases,
@@ -51,8 +54,6 @@ from routes import news
 from services.news_fetcher import get_all_news
 from services.stats import get_new_releases
 from services.title_utils import get_related_titles
-
-# from services.reviews import get_reviews_for_title
 from services.actors import get_cast_for_title, get_crew_for_title
 
 # ─── Environment Setup ───────────────────────────────────────────────────────
@@ -82,7 +83,6 @@ templates.env.filters["currency"] = currency
 
 # ─── Router Setup ────────────────────────────────────────────────────────────
 router = APIRouter()
-
 app.include_router(news.router)
 
 
@@ -119,10 +119,8 @@ async def db_search_results(
     title = title.strip()
     year = year.strip()
 
-    conditions = []
     params = []
 
-    # Build WHERE clause for both queries
     movie_conditions = []
     series_conditions = []
 
@@ -347,6 +345,7 @@ def get_seasons_for_series(series_id: int):
         cursor.execute(query, (series_id,))
         return cursor.fetchall()
 
+
 def get_episodes_for_season(season_id: int):
     query = """
         SELECT
@@ -407,7 +406,7 @@ def get_average_ratings(series_id: int):
         """,
             (series_id,),
         )
-        series_rating = cur.fetchone()["series_average_rating"]
+        series_rating = cur.fetchone()["average_rating"]
 
     return season_ratings, series_rating
 
@@ -515,7 +514,6 @@ async def search_person(request: Request):
         people = search_person_tmdb(name)
     else:
         # GET request — reuse previous search results
-        # You need to store the last search somewhere
         name = request.query_params.get("person_name")
         people = search_person_tmdb(name) if name else []
 
@@ -525,158 +523,6 @@ async def search_person(request: Request):
             "request": request,
             "people": people,
             "now": datetime.now(),
-        },
-    )
-
-
-@app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
-    conn = get_connection()
-    stats = {}
-    try:
-        with conn.cursor() as cur:
-            # Orphaned logs
-            cur.execute("""
-                SELECT COUNT(*) FROM update_logs
-                WHERE content_id NOT IN (
-                SELECT movie_id FROM movies
-                UNION
-                SELECT series_id FROM series);
-            """)
-            stats["orphaned_logs"] = cur.fetchone()[0]
-
-            # Active release years
-            cur.execute("""
-                SELECT mmd.release_year, COUNT(*) AS title_count
-                FROM movies m
-                JOIN movie_metadata mmd ON mmd.movie_id = m.movie_id
-                GROUP BY mmd.release_year
-                ORDER BY title_count DESC
-                LIMIT 10;
-            """)
-            stats["active_release_years"] = cur.fetchall()
-
-            # Hidden gems
-            cur.execute("""
-                SELECT movie_id, movie_title, vote_average, vote_count
-                FROM movies
-                WHERE vote_average >= 7.0 AND vote_count > 100 AND vote_count < 1000
-                ORDER BY vote_average DESC
-                LIMIT 10;
-            """)
-            hidden_gems = [
-                {
-                    "movie_id": row[0],
-                    "movie_title": row[1],
-                    "vote_average": row[2],
-                    "vote_count": row[3],
-                }
-                for row in cur.fetchall()
-            ]
-
-            # Most reviewed titles
-            cur.execute("""
-                SELECT movie_id, movie_title, vote_count
-                FROM movies
-                WHERE vote_count IS NOT NULL
-                ORDER BY vote_count DESC
-                LIMIT 10;
-            """)
-            most_reviewed_titles = [
-                {"movie_id": row[0], "movie_title": row[1], "vote_count": row[2]}
-                for row in cur.fetchall()
-            ]
-
-            # Popular genres
-            cur.execute("""
-                SELECT g.genre_name AS genre, COUNT(*) AS genre_count
-                FROM genres g
-                JOIN movie_genres mg ON mg.genre_id = g.genre_id
-                GROUP BY g.genre_name
-                ORDER BY genre_count DESC
-                LIMIT 10;
-            """)
-            popular_genres = [
-                {"genre_name": row[0], "genre_count": row[1]} for row in cur.fetchall()
-            ]
-
-            # Prolific actors
-            cur.execute("""
-                SELECT p.name AS actor_name, COUNT(*) AS appearances
-                FROM movie_cast mc
-                JOIN people p ON mc.actor_id = p.person_id
-                GROUP BY p.name
-                ORDER BY appearances DESC
-                LIMIT 10;
-            """)
-            prolific_actors = [
-                {"actor_name": row[0], "appearances": row[1]} for row in cur.fetchall()
-            ]
-
-            # top rated actors
-            cur.execute("""
-                SELECT p.name AS actor_name,
-                    ROUND(AVG(m.vote_average)::numeric, 2) AS avg_rating,
-                    COUNT(*) AS title_count
-                FROM movie_cast mc
-                JOIN people p ON mc.actor_id = p.person_id
-                JOIN movies m ON mc.movie_id = m.movie_id
-                WHERE m.vote_average IS NOT NULL
-                GROUP BY p.name
-                HAVING COUNT(*) > 5
-                ORDER BY avg_rating DESC
-                LIMIT 10;
-            """)
-            top_rated_actors = [
-                {"actor_name": row[0], "avg_rating": row[1], "title_count": row[2]}
-                for row in cur.fetchall()
-            ]
-
-            # top rated movies
-            cur.execute("""
-                SELECT movie_id, movie_title, vote_average
-                FROM movies
-                WHERE vote_average IS NOT NULL
-                ORDER BY vote_average DESC
-                LIMIT 10;
-            """)
-            top_rated_movies = [
-                {"id": row[0], "movie_title": row[1], "vote_average": row[2]}
-                for row in cur.fetchall()
-            ]
-
-            # trending titles
-            cur.execute("""
-                SELECT movie_id, movie_title, last_updated
-                FROM movies
-                WHERE last_updated > NOW() - INTERVAL '7 days'
-                ORDER BY last_updated DESC
-                LIMIT 10;
-            """)
-            trending_titles = [
-                {"movie_id": row[0], "movie_title": row[1], "last_updated": row[2]}
-                for row in cur.fetchall()
-            ]
-
-    finally:
-        conn.close()
-
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "stats": stats,
-            "active_release_years": [
-                {"release_year": row[0], "title_count": row[1]}
-                for row in stats["active_release_years"]
-            ],
-            "hidden_gems": hidden_gems,
-            "most_reviewed_titles": most_reviewed_titles,
-            "popular_genres": popular_genres,
-            "prolific_actors": prolific_actors,
-            "top_rated_actors": top_rated_actors,
-            "top_rated_movies": top_rated_movies,
-            "trending_titles": trending_titles,
         },
     )
 
@@ -727,7 +573,7 @@ def annotate_result(cur, result):
             return {**result, "exists": False, "last_updated": None}
 
         row = cur.fetchone()
-        last_updated = row[0] if row else None
+        last_updated = row["last_updated"] if row else None
 
         return {
             **result,
@@ -796,7 +642,7 @@ async def upload(request: Request, tmdb_id: int, media_type: str):
             "title": title,
             "content_id": content_id,
             "media_type": media_type,
-            "upload_status": "Upload complete",  # optional
+            "upload_status": "Upload complete",
             "raw_changes": changes,
             "now": datetime.now(),
         },
@@ -809,7 +655,7 @@ async def bulk_upload_form(request: Request):
         "bulk_upload.html",
         {
             "request": request,
-            "now": datetime.now(),  # ✅ Add this line
+            "now": datetime.now(),
         },
     )
 
@@ -912,6 +758,7 @@ async def bulk_upload(
         },
     )
 
+
 TMDB_BASE = "https://api.themoviedb.org/3"
 
 # Cache genre maps
@@ -928,28 +775,6 @@ def get_movie_details(movie_id: int) -> Dict:
     except Exception as e:
         print(f"Error fetching details for movie {movie_id}: {e}")
         return {}
-
-
-def get_genre_map(content_type: str) -> Dict[int, str]:
-    global _movie_genres, _tv_genres
-    if content_type == "movie" and _movie_genres:
-        return _movie_genres
-    if content_type == "tv" and _tv_genres:
-        return _tv_genres
-
-    url = f"{TMDB_BASE}/genre/{content_type}/list"
-    params = {"api_key": TMDB_API_KEY, "language": "en-GB"}
-    response = requests.get(url, params=params)
-    genres = response.json().get("genres", [])
-    genre_map = {g["id"]: g["name"] for g in genres}
-
-    if content_type == "movie":
-        _movie_genres = genre_map
-    else:
-        _tv_genres = genre_map
-
-    return genre_map
-
 
 def get_english_language_info(movie_id: int) -> Dict:
     url = f"{TMDB_BASE}/movie/{movie_id}"
@@ -968,16 +793,6 @@ def get_english_language_info(movie_id: int) -> Dict:
         print(f"Error fetching movie info for {movie_id}: {e}")
     return {}
 
-
-def get_month_range(month: int = None, year: int = None) -> List[str]:
-    if month and year:
-        return [f"{year}-{month:02d}"]
-
-    now = datetime.now()
-    next_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1)
-
-    return [now.strftime("%Y-%m"), next_month.strftime("%Y-%m")]
-
 def format_local(dt, fmt="%d %b %Y, %H:%M"):
     if isinstance(dt, str):
         try:
@@ -992,20 +807,14 @@ def format_local(dt, fmt="%d %b %Y, %H:%M"):
     return dt.astimezone(ZoneInfo("Europe/London")).strftime(fmt)
 
 
-def currency(value, symbol="$"):
-    try:
-        value = float(value)
-        return f"{symbol}{value:,.0f}"
-    except (ValueError, TypeError):
-        return value
-
 BASE_URL = "https://api.themoviedb.org/3"
+
 
 def get_imdb_id(credit):
     if credit["media_type"] == "movie":
-        url = f"https://api.themoviedb.org/3/movie/{credit['id']}?api_key={TMDB_API_KEY}"
+        url = f"{BASE_URL}/movie/{credit['id']}?api_key={TMDB_API_KEY}"
     elif credit["media_type"] == "tv":
-        url = f"https://api.themoviedb.org/3/tv/{credit['id']}/external_ids?api_key={TMDB_API_KEY}"
+        url = f"{BASE_URL}/tv/{credit['id']}/external_ids?api_key={TMDB_API_KEY}"
     else:
         return None
 

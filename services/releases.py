@@ -1,11 +1,10 @@
 # services/releases.py
 
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Dict
 from config.settings import TMDB_API_KEY
 from services.genres import get_genre_map
-from services.utils import get_month_range  # if this exists in your project
 
 TMDB_BASE = "https://api.themoviedb.org/3"
 
@@ -162,3 +161,12 @@ def get_tv_releases(month: int = None, year: int = None) -> List[Dict]:
             )
 
     return releases
+
+def get_month_range(month: int = None, year: int = None):
+    if month and year:
+        return [f"{year}-{month:02d}"]
+
+    now = datetime.now()
+    next_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1)
+
+    return [now.strftime("%Y-%m"), next_month.strftime("%Y-%m")]
