@@ -1,5 +1,7 @@
 -- sql/popular_genres.sql
-SELECT g.genre_name AS genre, COUNT(*) AS genre_count
+SELECT 
+    g.genre_name AS genre_name,
+    COUNT(*) AS genre_count
 FROM genres g
 JOIN movie_genres mg ON mg.genre_id = g.genre_id
 GROUP BY g.genre_name

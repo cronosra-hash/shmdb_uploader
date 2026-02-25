@@ -38,10 +38,7 @@ from services.logs import (
 )
 from services import stats
 from services.freshness import get_freshness_summary
-from services.releases import (
-    get_cinema_releases,
-    get_tv_releases,
-)
+from services.releases import get_cinema_releases, get_tv_releases
 from services.titles import (
     get_title_by_id,
     get_series_by_id,
@@ -120,7 +117,6 @@ async def db_search_results(
     year = year.strip()
 
     params = []
-
     movie_conditions = []
     series_conditions = []
 
@@ -158,7 +154,8 @@ async def db_search_results(
 
         UNION
 
-        SELECT s.series_id AS id, s.series_name AS title, DATE_PART('year', s.first_air_date) AS release_year, 'tv' AS type
+        SELECT s.series_id AS id, s.series_name AS title,
+               DATE_PART('year', s.first_air_date) AS release_year, 'tv' AS type
         FROM series s
         WHERE {series_where}
     """
@@ -216,7 +213,6 @@ async def title_detail(request: Request, title_type: str, title_id: int):
         title = diagnostics["data"][0] if diagnostics["record_count"] else None
 
         with db.cursor(cursor_factory=RealDictCursor) as cur:
-            # Fetch seasons
             cur.execute(
                 """
                 SELECT season_id, season_number, air_date, poster_path, season_name, overview
@@ -230,7 +226,6 @@ async def title_detail(request: Request, title_type: str, title_id: int):
 
             season_map = []
             for season in seasons:
-                # Fetch episodes with metadata
                 cur.execute(
                     """
                     SELECT
@@ -250,12 +245,10 @@ async def title_detail(request: Request, title_type: str, title_id: int):
                 )
                 season["episodes"] = cur.fetchall()
 
-                # Format season air date
                 season["air_date_formatted"] = format_local(
                     season.get("air_date"), "%-d %B %Y"
                 )
 
-                # Format episode dates
                 for ep in season["episodes"]:
                     ep["air_date_formatted"] = format_local(
                         ep.get("air_date"), "%-d %B %Y"
@@ -264,7 +257,6 @@ async def title_detail(request: Request, title_type: str, title_id: int):
                         ep.get("watched_date"), "%-d %B %Y"
                     )
 
-                # Compute season date range
                 dates = [
                     ep["air_date"] for ep in season["episodes"] if ep.get("air_date")
                 ]
@@ -274,7 +266,6 @@ async def title_detail(request: Request, title_type: str, title_id: int):
                 else:
                     season["date_from"] = season["date_to"] = None
 
-                # Fetch average rating for this season
                 cur.execute(
                     """
                     SELECT ROUND(AVG(m.rating)::numeric, 2) AS average_rating
@@ -288,7 +279,6 @@ async def title_detail(request: Request, title_type: str, title_id: int):
 
                 season_map.append(season)
 
-            # Fetch overall series rating
             cur.execute(
                 """
                 SELECT ROUND(AVG(m.rating)::numeric, 2) AS series_average_rating
@@ -378,13 +368,12 @@ def get_season_episode_map(series_id: int):
 def get_average_ratings(series_id: int):
     db = get_connection()
     with db.cursor(cursor_factory=RealDictCursor) as cur:
-        # Per season
         cur.execute(
             """
             SELECT
-            s.season_id,
-            s.season_number,
-            ROUND(AVG(m.rating)::numeric, 2) AS average_rating
+                s.season_id,
+                s.season_number,
+                ROUND(AVG(m.rating)::numeric, 2) AS average_rating
             FROM series_seasons s
             JOIN series_episodes e ON e.season_id = s.season_id
             JOIN episode_metadata m ON m.episode_id = e.episode_id
@@ -396,7 +385,6 @@ def get_average_ratings(series_id: int):
         )
         season_ratings = cur.fetchall()
 
-        # Whole series
         cur.execute(
             """
             SELECT ROUND(AVG(m.rating)::numeric, 2) AS average_rating
@@ -411,7 +399,7 @@ def get_average_ratings(series_id: int):
     return season_ratings, series_rating
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/", response_class=HTMLResponse, name="index")
 async def index(request: Request):
     now = datetime.now()
     next_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1)
@@ -453,46 +441,41 @@ def news_page(request: Request):
         "news.html", {"request": request, "articles": articles}
     )
 
-
 def get_stats_context(request: Request):
-    articles = get_all_news(api_key="pub_000738d4a1274d798638038b9633580c")
-    new_releases = get_new_releases()
+    stats_blob = stats.get_all_stats()
+
+    # Convert last_update string → datetime
+    raw_last_update = stats_blob.get("last_update")
+    if isinstance(raw_last_update, str):
+        try:
+            last_update = datetime.fromisoformat(raw_last_update.replace("Z", "+00:00"))
+        except Exception:
+            last_update = None
+    else:
+        last_update = raw_last_update
 
     return {
         "request": request,
         "now": datetime.now(),
         "app_env": APP_ENV,
         "app_version": "0.1.0",
-        "articles": articles,
-        "new_releases": new_releases,
-        "top_fields": stats.get_top_fields(),
-        "movie_count": stats.get_movie_count(),
-        "series_count": stats.get_series_count(),
-        "last_update": stats.get_last_update(),
-        "recent_updates": stats.get_recent_updates(),
-        "most_updated_title": stats.get_most_updated_title(),
-        "movies_missing_fields": stats.get_movies_missing_fields(),
-        "series_missing_fields": stats.get_series_missing_fields(),
-        "orphaned_logs": stats.get_orphaned_logs(),
-        "stats": {
-            "active_release_years": stats.get_active_release_years(),
-            "hidden_gems": stats.get_hidden_gems(),
-            "most_reviewed_titles": stats.get_most_reviewed_titles(),
-            "popular_genres": stats.get_popular_genres(),
-            "prolific_actors": stats.get_prolific_actors(),
-            "top_rated_actors": stats.get_top_rated_actors(),
-            "top_rated_movies": stats.get_top_rated_movies(),
-            "trending_titles": stats.get_trending_titles(),
-            "freshness": get_freshness_summary(),
-        },
+
+        "top_fields": stats_blob["top_fields"],
+        "movie_count": stats_blob["movie_count"],
+        "series_count": stats_blob["series_count"],
+        "last_update": last_update,
+        "most_updated_title": stats_blob["most_updated_title"],
+        "orphaned_logs": stats_blob["orphaned_logs"],
+        "movies_missing_fields": stats_blob["movies_missing_fields"],  # <-- FIX
+        "series_missing_fields": stats_blob["series_missing_fields"],  # <-- you will need this too
+        "freshness": stats_blob["freshness"],  # <-- and this
+        "stats": stats_blob,
     }
 
 
-# ─── Register Router ─────────────────────────────────────────────────────────
 app.include_router(router)
 
 
-# ─── Utility Functions ───────────────────────────────────────────────────────
 def classify_freshness(lastupdated):
     if not lastupdated:
         return "stale"
@@ -513,7 +496,6 @@ async def search_person(request: Request):
         name = form.get("person_name")
         people = search_person_tmdb(name)
     else:
-        # GET request — reuse previous search results
         name = request.query_params.get("person_name")
         people = search_person_tmdb(name) if name else []
 
@@ -612,7 +594,6 @@ async def upload(request: Request, tmdb_id: int, media_type: str):
 
             filtered_changes = filter_changes(changes)
 
-            # Extract title from first change (if available)
             if filtered_changes:
                 title = filtered_changes[0].get("title") or filtered_changes[0].get(
                     "movie_title", ""
@@ -679,12 +660,10 @@ async def bulk_upload(
                 if previous_max is None:
                     previous_max = datetime.min
 
-                # Upload and get content ID
                 content_id, base_message = process_media_upload(
                     conn, tmdb_id, media_type
                 )
 
-                # Default values
                 title = ""
                 filtered = []
                 message = ""
@@ -695,7 +674,6 @@ async def bulk_upload(
                     )
                     filtered = filter_changes(changes)
 
-                    # Try extracting title from changes
                     if filtered:
                         first = filtered[0]
                         title = (
@@ -761,7 +739,6 @@ async def bulk_upload(
 
 TMDB_BASE = "https://api.themoviedb.org/3"
 
-# Cache genre maps
 _movie_genres = None
 _tv_genres = None
 
@@ -775,6 +752,7 @@ def get_movie_details(movie_id: int) -> Dict:
     except Exception as e:
         print(f"Error fetching details for movie {movie_id}: {e}")
         return {}
+
 
 def get_english_language_info(movie_id: int) -> Dict:
     url = f"{TMDB_BASE}/movie/{movie_id}"
@@ -792,6 +770,7 @@ def get_english_language_info(movie_id: int) -> Dict:
     except Exception as e:
         print(f"Error fetching movie info for {movie_id}: {e}")
     return {}
+
 
 def format_local(dt, fmt="%d %b %Y, %H:%M"):
     if isinstance(dt, str):

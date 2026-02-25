@@ -1,6 +1,7 @@
+import psycopg2
+import psycopg2.extras
 from psycopg2.pool import SimpleConnectionPool
 from config.settings import DB_CONFIG
-import psycopg2.extras
 
 pool = SimpleConnectionPool(
     minconn=1,
@@ -9,15 +10,49 @@ pool = SimpleConnectionPool(
 )
 
 def get_connection():
-    return pool.getconn()
+    """
+    Returns a valid, working connection.
+    If the connection is stale or closed, it is replaced.
+    """
+    conn = pool.getconn()
+
+    try:
+        # Test the connection
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1;")
+    except Exception:
+        # Connection is dead → replace it
+        try:
+            pool.putconn(conn, close=True)
+        except Exception:
+            pass
+
+        conn = psycopg2.connect(**DB_CONFIG)
+
+    return conn
+
 
 def release_connection(conn):
-    pool.putconn(conn)
+    """
+    Safely return a connection to the pool.
+    If it's broken, close it instead.
+    """
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1;")
+        pool.putconn(conn)
+    except Exception:
+        pool.putconn(conn, close=True)
+
 
 def get_dict_cursor(conn):
+    """
+    Returns a RealDictCursor with prepared statements disabled.
+    """
     cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cursor.prepare_threshold = 0 
+    cursor.prepare_threshold = 0
     return cursor
+
 
 
 

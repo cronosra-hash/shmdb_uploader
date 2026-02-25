@@ -39,11 +39,14 @@ def get_popular_genres():
 def get_hidden_gems():
     return fetch_stat("hidden_gems")
 
-
-
+def get_all_stats():
+    query = load_query("all_stats")
+    with dict_cursor() as cursor:
+        cursor.execute(query)
+        row = cursor.fetchone()
+        return row["stats"]
 
 #  Statistics Page
-
 def get_new_releases():
     return []
 
