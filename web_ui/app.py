@@ -466,9 +466,9 @@ def get_stats_context(request: Request):
         "last_update": last_update,
         "most_updated_title": stats_blob["most_updated_title"],
         "orphaned_logs": stats_blob["orphaned_logs"],
-        "movies_missing_fields": stats_blob["movies_missing_fields"],  # <-- FIX
-        "series_missing_fields": stats_blob["series_missing_fields"],  # <-- you will need this too
-        "freshness": stats_blob["freshness"],  # <-- and this
+        "movies_missing_fields": stats_blob["movies_missing_fields"],
+        "series_missing_fields": stats_blob["series_missing_fields"],
+        "freshness": stats_blob["freshness"],
         "stats": stats_blob,
     }
 
