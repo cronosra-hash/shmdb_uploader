@@ -49,7 +49,6 @@ from services.diagnostics import wrap_query
 from web_ui.filters import datetimeformat, ago, to_timezone, timestamp_color
 from routes import news
 from services.news_fetcher import get_all_news
-from services.stats import get_new_releases
 from services.title_utils import get_related_titles
 from services.actors import get_cast_for_title, get_crew_for_title
 
