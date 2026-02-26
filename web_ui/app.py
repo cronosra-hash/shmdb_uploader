@@ -441,7 +441,11 @@ def news_page(request: Request):
     )
 
 def get_stats_context(request: Request):
-    stats_blob = stats.get_all_stats()
+    # Cache stats for the duration of this request to avoid multiple DB calls
+    if not hasattr(request.state, "stats_blob"):
+        request.state.stats_blob = stats.get_all_stats()
+
+    stats_blob = request.state.stats_blob
 
     # Convert last_update string → datetime
     raw_last_update = stats_blob.get("last_update")
@@ -459,21 +463,22 @@ def get_stats_context(request: Request):
         "app_env": APP_ENV,
         "app_version": "0.1.0",
 
-        "top_fields": stats_blob["top_fields"],
-        "movie_count": stats_blob["movie_count"],
-        "series_count": stats_blob["series_count"],
+        # Individual fields extracted from stats_blob
+        "top_fields": stats_blob.get("top_fields"),
+        "movie_count": stats_blob.get("movie_count"),
+        "series_count": stats_blob.get("series_count"),
         "last_update": last_update,
-        "most_updated_title": stats_blob["most_updated_title"],
-        "orphaned_logs": stats_blob["orphaned_logs"],
-        "movies_missing_fields": stats_blob["movies_missing_fields"],
-        "series_missing_fields": stats_blob["series_missing_fields"],
-        "freshness": stats_blob["freshness"],
+        "most_updated_title": stats_blob.get("most_updated_title"),
+        "orphaned_logs": stats_blob.get("orphaned_logs"),
+        "movies_missing_fields": stats_blob.get("movies_missing_fields"),
+        "series_missing_fields": stats_blob.get("series_missing_fields"),
+        "freshness": stats_blob.get("freshness"),
+
+        # Full blob for anything else the template might reference
         "stats": stats_blob,
     }
 
-
 app.include_router(router)
-
 
 def classify_freshness(lastupdated):
     if not lastupdated:
