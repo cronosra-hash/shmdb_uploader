@@ -1,6 +1,10 @@
-<div class="cast-card">
-  <h4>🎭 Cast</h4>
-  <div class="cast-grid">
+<details class="cast-card group mb-6 border border-gray-700 rounded-lg p-4">
+  <summary class="cursor-pointer text-xl font-semibold flex items-center justify-between py-2">
+    🎭 Cast
+    <span class="transition-transform group-open:rotate-180">⌄</span>
+  </summary>
+
+  <div class="cast-grid mt-4">
     {% for actor in cast %}
     <div class="cast-item">
       {% if actor.profile_path %}
@@ -8,19 +12,24 @@
       {% else %}
       <div class="no-image">No Image</div>
       {% endif %}
+
       <div class="actor-name">{{ actor.name }}</div>
+
       <div class="character-name">
         {{ actor.character_name }}
         {% if actor.role_type %}
         <span class="role-badge">
           {% set role = actor.role_type | lower | trim %}
-          {% if role == 'lead' %}🎬 Lead{% elif role == 'supporting' %}🎭 Supporting
-          {% elif role == 'cameo' %}👀 Cameo{% elif role == 'voice' %}🎙 Voice
-          {% else %}🔧 {{ role | capitalize }}{% endif %}
+          {% if role == 'lead' %}🎬 Lead
+          {% elif role == 'supporting' %}🎭 Supporting
+          {% elif role == 'cameo' %}👀 Cameo
+          {% elif role == 'voice' %}🎙 Voice
+          {% else %}🔧 {{ role | capitalize }}
+          {% endif %}
         </span>
         {% endif %}
       </div>
     </div>
     {% endfor %}
   </div>
-</div>
+</details>

@@ -1,6 +1,10 @@
-<div class="crew-card">
-  <h4>🧑‍💼 Crew</h4>
-  <div class="crew-grid">
+<details class="crew-card group mb-6 border border-gray-700 rounded-lg p-4">
+  <summary class="cursor-pointer text-xl font-semibold flex items-center justify-between py-2">
+    🧑‍💼 Crew
+    <span class="transition-transform group-open:rotate-180">⌄</span>
+  </summary>
+
+  <div class="crew-grid mt-4">
     {% for member in crew %}
     <div class="crew-item">
       {% if member.profile_path %}
@@ -8,20 +12,26 @@
       {% else %}
         <div class="no-image">No Image</div>
       {% endif %}
+
       <div class="crew-name">{{ member.name }}</div>
+
       <div class="crew-job">
         {{ member.job }}
         {% if member.job %}
           <span class="crew-badge">
             {% set job = member.job | lower | trim %}
-            {% if job == 'director' %}🎬 Director{% elif job == 'writer' %}🖊 Writer
-            {% elif job == 'composer' %}🎼 Composer{% elif job == 'producer' %}🧪 Producer
-            {% elif job == 'editor' %}✂️ Editor{% endif %}
+            {% if job == 'director' %}🎬 Director
+            {% elif job == 'writer' %}🖊 Writer
+            {% elif job == 'composer' %}🎼 Composer
+            {% elif job == 'producer' %}🧪 Producer
+            {% elif job == 'editor' %}✂️ Editor
+            {% endif %}
           </span>
         {% endif %}
       </div>
+
       <div class="crew-department">{{ member.department }}</div>
     </div>
     {% endfor %}
   </div>
-</div>
+</details>
