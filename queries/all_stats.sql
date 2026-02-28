@@ -185,6 +185,22 @@ SELECT json_build_object(
     'series_count',
     (SELECT COUNT(*) FROM series),
 
+    -- Episode count
+    'episode_count',
+    (SELECT COUNT(*) FROM series_episodes),
+
+    -- Season count
+    'season_count',
+    (SELECT COUNT(*) FROM series_seasons),
+
+    -- Cast and people counts
+    'movie_cast_count',
+    (SELECT COUNT(*) FROM movie_cast),
+    'series_cast_count',
+    (SELECT COUNT(*) FROM series_cast),
+    'people_count',
+    (SELECT COUNT(*) FROM people),
+
     -- Last update timestamp
     'last_update',
     (

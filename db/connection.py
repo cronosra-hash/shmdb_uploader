@@ -8,7 +8,6 @@ pool = SimpleConnectionPool(minconn=1, maxconn=10, **DB_CONFIG)
 
 def get_connection():
     conn = pool.getconn()
-
     try:
         with conn.cursor() as cur:
             cur.execute("SELECT 1;")
