@@ -3,12 +3,11 @@ import os
 import sys
 from datetime import datetime, timedelta, date
 from zoneinfo import ZoneInfo
-from collections import defaultdict
 
 # ─── Third-Party Imports ─────────────────────────────────────────────────────
 from psycopg2.extras import RealDictCursor
 import requests
-from typing import List, Dict
+from typing import Dict
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, APIRouter, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -20,29 +19,20 @@ import traceback
 from config.settings import TMDB_API_KEY
 from db.connection import get_connection
 from db.helpers import dict_cursor
+from services.missing_titles import get_titles_missing
 from uploader.media_processor import process_media_upload
-from uploader.movie_uploader import insert_or_update_movie_data
-from uploader.tv_uploader import (
-    insert_or_update_series_data,
-    sync_series_episodes,
-    sync_series_seasons,
-)
-from tmdb.movie_api import get_movie_data
 from tmdb.person_api import search_person_tmdb
 from tmdb.search_api import search_tmdb_combined, get_tmdb_data
-from tmdb.tv_api import fetch_series, fetch_all_episodes
 from services.logs import (
     get_previous_log_timestamp,
     fetch_new_update_logs,
     filter_changes,
 )
 from services import stats
-from services.freshness import get_freshness_summary
 from services.releases import get_cinema_releases, get_tv_releases
 from services.titles import (
     get_title_by_id,
     get_series_by_id,
-    get_movie_titles_missing,
     get_tv_titles_missing,
 )
 from services.diagnostics import wrap_query
@@ -84,7 +74,7 @@ app.include_router(news.router)
 
 @app.get("/missing/{field}", name="missing_movies")
 async def missing_movies(request: Request, field: str):
-    movies = get_movie_titles_missing(field)
+    movies = get_titles_missing(field)
     return templates.TemplateResponse(
         "partials/missing_movies.html",
         {"request": request, "field": field, "movies": movies},
